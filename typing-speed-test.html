@@ -1,167 +1,100 @@
-<!-- typing-speed-test.html: 타자 속도 테스트 게임 (점수 밸런스 수정 버전) -->
+<!-- typing-speed-test.html: Firebase 연동 버전 -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Debug Games Hub | 타자 속도 테스트 게임</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <title>디버그 동아리 | 타자 속도 테스트</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
   <style>
-    body {
-      font-family: 'Poppins', sans-serif;
-      background: linear-gradient(135deg, #ece9e6, #ffffff);
-      margin: 0;
-      padding: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-    }
-    .container {
-      background: #fff;
-      width: 90%;
-      max-width: 700px;
-      padding: 30px;
-      border-radius: 16px;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-      text-align: center;
-    }
-    .sentence {
-      font-size: 1.2em;
-      margin-bottom: 20px;
-      line-height: 1.6;
-      word-wrap: break-word;
-    }
-    .input-area {
-      width: 100%;
-      padding: 10px;
-      font-size: 1.1em;
-      border: 2px solid #ddd;
-      border-radius: 8px;
-      margin-bottom: 20px;
-    }
-    .highlight-correct {
-      color: green;
-    }
-    .highlight-wrong {
-      color: red;
-    }
-    .result {
-      margin-top: 20px;
-      font-size: 1.1em;
-    }
-    .hidden {
-      display: none;
-    }
-    button, a.button-link {
-      padding: 10px 20px;
-      font-size: 1em;
-      border: none;
-      border-radius: 8px;
-      background-color: #4caf50;
-      color: white;
-      cursor: pointer;
-      text-decoration: none;
-      display: inline-block;
-      margin-top: 10px;
-    }
-    button:hover, a.button-link:hover {
-      background-color: #45a049;
-    }
+    body { font-family: 'Poppins', sans-serif; background: linear-gradient(135deg, #0f2027, #203a43, #2c5364); margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; color: #fff; }
+    .container { background: rgba(255, 255, 255, 0.07); backdrop-filter: blur(15px); width: 90%; max-width: 700px; padding: 30px; border-radius: 16px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); text-align: center; }
+    input, button { padding: 12px; margin: 10px; font-size: 1em; border-radius: 8px; border: none; }
+    input { width: 80%; }
+    button { background: linear-gradient(135deg, #ff416c, #ff4b2b); color: #fff; cursor: pointer; }
+    button:hover { transform: scale(1.05); }
+    .highlight-correct { color: #4caf50; }
+    .highlight-wrong { color: #f44336; }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>타자 속도 테스트 게임</h1>
-    <div class="sentence" id="sentence"></div>
-    <input type="text" class="input-area" id="inputArea" placeholder="여기에 입력하세요" />
-    <div class="result hidden" id="result"></div>
-    <button id="restartBtn" class="hidden">다시 시작</button>
-    <a class="button-link" href="/-Debug-Games-Hub/index.html">메인으로 돌아가기</a>
+    <h1>⌨️ 타자 속도 테스트</h1>
+    <div id="sentence">문장이 여기에 표시됩니다</div>
+    <input type="text" id="inputArea" placeholder="여기에 입력하세요">
+    <div id="result"></div>
+    <button onclick="startGame()">다시 시작</button>
+    <button onclick="goBack()">메인으로 돌아가기</button>
   </div>
 
   <script>
-    const easySentences = [...]; // (생략: 기존 문장 배열)
-    const hardSentences = [...]; // (생략: 기존 문장 배열)
-    const allSentences = [...easySentences, ...hardSentences];
+    const firebaseConfig = {
+      apiKey: "AIzaSyDwk8QF3jJMzk30QeJR_kFTq6gQXGmoiG4",
+      authDomain: "debug-games-hub.firebaseapp.com",
+      projectId: "debug-games-hub",
+      storageBucket: "debug-games-hub.firebasestorage.app",
+      messagingSenderId: "391096300170",
+      appId: "1:391096300170:web:156898c1574c15fca9f373"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
-    const sentenceEl = document.getElementById('sentence');
+    const sentences = [
+      "오늘은 맑고 화창한 날씨입니다.",
+      "나는 아침에 따뜻한 커피를 마셨습니다.",
+      "학교에서 친구들과 재미있게 놀았습니다.",
+      "지구의 자전과 공전은 계절의 변화와 낮밤을 만들어 냅니다.",
+      "인공지능 기술은 점점 더 우리의 삶에 깊숙이 스며들고 있습니다."
+    ];
+
+    let target = '', startTime = 0;
+    const sentenceDiv = document.getElementById('sentence');
     const inputEl = document.getElementById('inputArea');
-    const resultEl = document.getElementById('result');
-    const restartBtn = document.getElementById('restartBtn');
-
-    let targetSentence = '';
-    let startTime = 0;
-    let endTime = 0;
-    let correctChars = 0;
-    let totalChars = 0;
+    const resultDiv = document.getElementById('result');
 
     function startGame() {
-      targetSentence = allSentences[Math.floor(Math.random() * allSentences.length)];
-      sentenceEl.textContent = targetSentence;
+      target = sentences[Math.floor(Math.random() * sentences.length)];
+      sentenceDiv.textContent = target;
       inputEl.value = '';
-      resultEl.classList.add('hidden');
-      restartBtn.classList.add('hidden');
-      correctChars = 0;
-      totalChars = targetSentence.length;
+      resultDiv.textContent = '';
       startTime = 0;
-      endTime = 0;
     }
 
     inputEl.addEventListener('input', () => {
-      if (startTime === 0) {
-        startTime = new Date().getTime();
-      }
-
+      if (startTime === 0) startTime = new Date().getTime();
       const userInput = inputEl.value;
-      correctChars = 0;
-
-      let displayText = '';
-      for (let i = 0; i < targetSentence.length; i++) {
-        if (userInput[i] == null) {
-          displayText += targetSentence[i];
-        } else if (userInput[i] === targetSentence[i]) {
-          displayText += `<span class="highlight-correct">${targetSentence[i]}</span>`;
-          correctChars++;
-        } else {
-          displayText += `<span class="highlight-wrong">${targetSentence[i]}</span>`;
-        }
-      }
-      sentenceEl.innerHTML = displayText;
-
-      if (userInput === targetSentence) {
-        endTime = new Date().getTime();
-        showResult();
+      if (userInput === target) {
+        const endTime = new Date().getTime();
+        const timeTaken = (endTime - startTime) / 1000;
+        const cpm = Math.round((target.length / timeTaken) * 60);
+        resultDiv.innerHTML = `완료! 시간: ${timeTaken.toFixed(2)}초, CPM: ${cpm}`;
+        saveScore(cpm);
       }
     });
 
-    function showResult() {
-      const timeTakenSec = (endTime - startTime) / 1000;
-      const cps = (totalChars / timeTakenSec).toFixed(2);
-      const cpm = (totalChars / timeTakenSec * 60).toFixed(2);
-      const accuracy = ((correctChars / totalChars) * 100).toFixed(2);
-
-      let score = 300; // 기본 점수 낮춤
-      score += (accuracy / 100) * 150; // 정확도 점수 낮춤
-      if (timeTakenSec <= 60) {
-        score += Math.min((60 - timeTakenSec) * 2, 100); // 속도 보너스 낮춤
-      }
-      score = Math.round(score);
-
-      resultEl.innerHTML = `
-        <p>걸린 시간: ${timeTakenSec.toFixed(2)}초</p>
-        <p>초당 타수 (CPS): ${cps}</p>
-        <p>분당 타수 (CPM): ${cpm}</p>
-        <p>정확도: ${accuracy}%</p>
-        <p><strong>최종 점수: ${score}점</strong></p>
-      `;
-      resultEl.classList.remove('hidden');
-      restartBtn.classList.remove('hidden');
+    function saveScore(score) {
+      const user = JSON.parse(localStorage.getItem('currentUser'));
+      if (!user) return;
+      const newEntry = {
+        id: user.id,
+        name: user.name,
+        game: '타자 속도 테스트',
+        score: score,
+        time: new Date().toISOString()
+      };
+      const newKey = db.ref().child('rankings').push().key;
+      const updates = {};
+      updates['/rankings/' + newKey] = newEntry;
+      db.ref().update(updates);
+      alert(`최종 점수(CPM): ${score}`);
     }
 
-    restartBtn.addEventListener('click', startGame);
+    function goBack() {
+      window.location.href = '/-Debug-Games-Hub/index.html';
+    }
 
-    startGame();
+    window.onload = startGame;
   </script>
 </body>
 </html>
