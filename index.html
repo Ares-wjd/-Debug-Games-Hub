@@ -1,4 +1,4 @@
-<!-- index.html: 우측 상단 로고 선택 적용 -->
+<!-- index.html: 최종 메인 페이지 (logo.png 적용) -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -11,7 +11,7 @@
     .container { background: rgba(255, 255, 255, 0.07); backdrop-filter: blur(15px); width: 90%; max-width: 700px; padding: 50px; border-radius: 24px; box-shadow: 0 12px 40px rgba(0,0,0,0.5); text-align: center; transition: transform 0.3s; }
     .container:hover { transform: translateY(-5px); }
     h1 { margin-bottom: 10px; font-size: 2.5rem; letter-spacing: 2px; }
-    .logo img { width: 100px; height: 100px; margin-bottom: 20px; border-radius: 50%; box-shadow: 0 4px 15px rgba(0,0,0,0.4); }
+    .logo img { width: 100px; height: 100px; margin-bottom: 20px; border-radius: 50%; box-shadow: 0 4px 15px rgba(0,0,0,0.4); object-fit: cover; }
     input, button { width: 100%; padding: 14px; margin: 12px 0; font-size: 1em; border: none; border-radius: 12px; outline: none; }
     input { background: rgba(255, 255, 255, 0.1); color: #fff; border: 1px solid rgba(255,255,255,0.3); }
     input::placeholder { color: rgba(255,255,255,0.6); }
@@ -29,7 +29,7 @@
 <body>
   <div class="container">
     <div class="logo">
-      <img src="top-right-logo.png" alt="Debug Games Hub Logo">
+      <img src="images/logo.png" alt="Debug Games Hub Logo">
     </div>
     <div id="loginSection">
       <h1>Debug Games Hub</h1>
