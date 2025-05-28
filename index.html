@@ -1,4 +1,4 @@
-<!-- index.html: 관리자 계정 기능 포함 전체 최신 코드 -->
+<!-- index.html: 일반 계정과 관리자 계정 모두 게임 참여 가능, 관리자 기능 추가 -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -24,7 +24,6 @@
     .modal-content { background: #fff; color: #000; padding: 20px; border-radius: 12px; width: 80%; max-width: 600px; max-height: 80%; overflow-y: auto; }
     .close-btn { float: right; background: #333; color: #fff; border: none; padding: 5px 10px; border-radius: 6px; cursor: pointer; }
     .close-btn:hover { background: #555; }
-    .record-item { margin: 5px 0; border-bottom: 1px solid #ddd; padding: 5px 0; }
   </style>
 </head>
 <body>
@@ -42,14 +41,29 @@
 
     <div id="menuSection" class="hidden">
       <div class="user-info" id="userInfo"></div>
+      <div class="user-score" id="userScore"></div>
+      <h2>게임 선택</h2>
+      <button onclick="goToGame('ai-word-game.html')">🤖 AI 단어 설명 게임</button>
+      <button onclick="goToGame('memory-card-game.html')">🧠 기억력 카드 게임</button>
+      <button onclick="goToGame('programming-quiz.html')">💻 프로그래밍 퀴즈 게임</button>
+      <button onclick="goToGame('typing-speed-test.html')">⌨️ 타자 속도 테스트 게임</button>
+      <button onclick="showRanking()">🏆 전체 및 게임별 랭킹 보기</button>
       <button onclick="logout()" style="background: linear-gradient(135deg, #43cea2, #185a9d); margin-top:20px;">🚪 로그아웃</button>
 
       <div id="adminSection" class="hidden admin-panel">
         <h3>관리자 메뉴</h3>
+        <button onclick="resetAllData()" style="background: linear-gradient(135deg, #ff8c00, #ff0080);">⚠️ 모든 데이터 초기화</button>
+        <h4>📋 사용자 목록</h4>
         <div id="userList"></div>
-        <h4>📊 랭킹 보기</h4>
-        <button onclick="showRanking()">🏆 랭킹 보기</button>
-        <div id="rankingContent" class="ranking-section hidden"></div>
+        <h4>📊 통계 분석</h4>
+        <div id="stats"></div>
+      </div>
+
+      <div id="rankingSection" class="hidden">
+        <h3>전체 합산 랭킹 (게임별 최고점 합산)</h3>
+        <div class="ranking-list" id="totalRanking"></div>
+        <h3>게임별 랭킹</h3>
+        <div class="ranking-list" id="gameRankings"></div>
       </div>
     </div>
   </div>
@@ -72,6 +86,7 @@
       localStorage.setItem('currentUser', JSON.stringify({ id, name }));
       document.getElementById('loginSection').classList.add('hidden');
       document.getElementById('menuSection').classList.remove('hidden');
+      updateUserInfo();
 
       if (id === '7410' && name.toLowerCase() === 'admin') {
         document.getElementById('adminSection').classList.remove('hidden');
@@ -86,77 +101,153 @@
       document.getElementById('adminSection').classList.add('hidden');
     }
 
+    function resetAllData() {
+      if (confirm('⚠️ 정말로 모든 데이터를 초기화하시겠습니까?')) {
+        localStorage.removeItem('allGameRankings');
+        alert('모든 데이터가 초기화되었습니다.');
+        location.reload();
+      }
+    }
+
+    function updateUserInfo() {
+      const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+      if (currentUser) {
+        const nameLabel = (currentUser.id === '7410' && currentUser.name.toLowerCase() === 'admin') ? '관리자님!' : `${currentUser.name} (${currentUser.id})님!`;
+        document.getElementById('userInfo').textContent = `환영합니다, ${nameLabel}`;
+
+        const allRankings = JSON.parse(localStorage.getItem('allGameRankings') || '[]');
+        const userGames = allRankings.filter(e => e.id === currentUser.id);
+
+        if (userGames.length > 0) {
+          let totalScore = 0;
+          let details = '';
+          const bestScores = {};
+          userGames.forEach(entry => {
+            if (!bestScores[entry.game] || bestScores[entry.game] < entry.score) {
+              bestScores[entry.game] = entry.score;
+            }
+          });
+          for (const [game, score] of Object.entries(bestScores)) {
+            totalScore += score;
+            details += `• ${game}: ${score}점\n`;
+          }
+          document.getElementById('userScore').innerHTML = `내 전체 합산 점수: ${totalScore}점<br>${details.replace(/\n/g, '<br>')}`;
+        } else {
+          document.getElementById('userScore').innerHTML = `내 전체 합산 점수: 기록 없음`;
+        }
+      }
+    }
+
     function showAdminPanel() {
       const allRankings = JSON.parse(localStorage.getItem('allGameRankings') || '[]');
       const userListDiv = document.getElementById('userList');
+      const statsDiv = document.getElementById('stats');
       userListDiv.innerHTML = '';
+      statsDiv.innerHTML = '';
 
-      const userMap = {};
+      const userScores = {};
       allRankings.forEach(entry => {
-        if (!entry.time) entry.time = new Date().toLocaleString();
-        if (!userMap[entry.id]) userMap[entry.id] = { name: entry.name, records: [] };
-        userMap[entry.id].records.push(entry);
+        if (!userScores[entry.id]) userScores[entry.id] = { name: entry.name, records: [], scores: {}, total: 0, count: 0 };
+        userScores[entry.id].records.push(entry);
+        if (!userScores[entry.id].scores[entry.game] || userScores[entry.id].scores[entry.game] < entry.score) {
+          userScores[entry.id].scores[entry.game] = entry.score;
+        }
+        userScores[entry.id].count++;
+      });
+      for (const user of Object.values(userScores)) {
+        user.total = Object.values(user.scores).reduce((a, b) => a + b, 0);
+      }
+
+      Object.entries(userScores).forEach(([id, data]) => {
+        userListDiv.innerHTML += `<div>🔹 <button onclick="showUserDetails('${id}')">${data.name} (${id})</button>: 총합 ${data.total}점, 기록 ${data.count}개</div>`;
       });
 
-      Object.entries(userMap).forEach(([id, data]) => {
-        userListDiv.innerHTML += `<div>🔹 <button onclick="showUserDetails('${id}')">${data.name} (${id})</button> <button onclick="deleteUser('${id}')">❌ 전체 삭제</button></div>`;
-      });
+      const totalUsers = Object.keys(userScores).length;
+      const totalGames = allRankings.length;
+      const averageScore = (Object.values(userScores).reduce((sum, u) => sum + u.total, 0) / totalUsers || 0).toFixed(2);
+      statsDiv.innerHTML = `총 사용자 수: ${totalUsers}<br>총 플레이 기록 수: ${totalGames}<br>평균 총합 점수: ${averageScore}점`;
     }
 
     function showUserDetails(userId) {
       const allRankings = JSON.parse(localStorage.getItem('allGameRankings') || '[]');
       const userEntries = allRankings.filter(e => e.id === userId);
-      let content = `<h3>${userEntries[0]?.name} (${userId}) 기록</h3>`;
+      let content = `<h3>${userEntries[0]?.name} (${userId}) 상세 기록</h3>`;
       if (userEntries.length === 0) {
         content += '<p>데이터 없음</p>';
       } else {
-        userEntries.forEach((entry, index) => {
-          content += `<div class="record-item">${entry.time} - ${entry.game}: ${entry.score}점 <button onclick="deleteRecord('${userId}', ${index})">개별 삭제</button></div>`;
+        userEntries.forEach((r, idx) => {
+          content += `<div>${r.time || '시간 없음'} - ${r.game}: ${r.score}점 <button onclick="deleteRecord('${userId}', ${idx})">개별 삭제</button></div>`;
         });
       }
       document.getElementById('detailContent').innerHTML = content;
       document.getElementById('detailModal').style.display = 'flex';
     }
 
-    function deleteUser(userId) {
-      if (confirm(`${userId}의 모든 기록을 삭제하시겠습니까?`)) {
-        let allRankings = JSON.parse(localStorage.getItem('allGameRankings') || '[]');
-        allRankings = allRankings.filter(e => e.id !== userId);
-        localStorage.setItem('allGameRankings', JSON.stringify(allRankings));
-        alert('삭제되었습니다.');
-        showAdminPanel();
-      }
-    }
-
-    function deleteRecord(userId, recordIndex) {
-      let allRankings = JSON.parse(localStorage.getItem('allGameRankings') || '[]');
-      const userRecords = allRankings.filter(e => e.id === userId);
-      const target = userRecords[recordIndex];
-      const updatedRankings = allRankings.filter(e => e !== target);
-      localStorage.setItem('allGameRankings', JSON.stringify(updatedRankings));
+    function deleteRecord(userId, idx) {
+      let all = JSON.parse(localStorage.getItem('allGameRankings') || '[]');
+      const userRecords = all.filter(e => e.id === userId);
+      const target = userRecords[idx];
+      all = all.filter(e => e !== target);
+      localStorage.setItem('allGameRankings', JSON.stringify(all));
       alert('기록이 삭제되었습니다.');
       showUserDetails(userId);
     }
 
-    function showRanking() {
-      const rankingDiv = document.getElementById('rankingContent');
-      rankingDiv.innerHTML = '';
-      const allRankings = JSON.parse(localStorage.getItem('allGameRankings') || '[]');
-      const userScores = {};
-      allRankings.forEach(entry => {
-        if (!userScores[entry.id]) userScores[entry.id] = { name: entry.name, total: 0 };
-        userScores[entry.id].total += entry.score;
-      });
-      const sorted = Object.entries(userScores).sort((a, b) => b[1].total - a[1].total);
-      sorted.forEach(([id, data], idx) => {
-        rankingDiv.innerHTML += `<div>${idx + 1}위 - ${data.name} (${id}): ${data.total}점</div>`;
-      });
-      rankingDiv.classList.toggle('hidden');
-    }
-
     function closeModal() {
       document.getElementById('detailModal').style.display = 'none';
-      showAdminPanel();
+    }
+
+    function goToGame(page) {
+      window.location.href = `/-Debug-Games-Hub/${page}`;
+    }
+
+    function showRanking() {
+      const rankingSection = document.getElementById('rankingSection');
+      const totalRanking = document.getElementById('totalRanking');
+      const gameRankings = document.getElementById('gameRankings');
+      totalRanking.innerHTML = '';
+      gameRankings.innerHTML = '';
+
+      const allRankings = JSON.parse(localStorage.getItem('allGameRankings') || '[]');
+      if (allRankings.length === 0) {
+        totalRanking.innerHTML = '<div>랭킹 데이터가 없습니다.</div>';
+        gameRankings.innerHTML = '<div>랭킹 데이터가 없습니다.</div>';
+        return;
+      }
+
+      const userScores = {};
+      allRankings.forEach(entry => {
+        if (!userScores[entry.id]) userScores[entry.id] = { name: entry.name, scores: {}, total: 0 };
+        if (!userScores[entry.id].scores[entry.game] || userScores[entry.id].scores[entry.game] < entry.score) {
+          userScores[entry.id].scores[entry.game] = entry.score;
+        }
+      });
+      for (const user of Object.values(userScores)) {
+        user.total = Object.values(user.scores).reduce((a, b) => a + b, 0);
+      }
+      const sortedTotal = Object.entries(userScores).sort((a, b) => b[1].total - a[1].total);
+      sortedTotal.slice(0, 5).forEach(([id, data], index) => {
+        totalRanking.innerHTML += `<div>${index + 1}위 - ${data.name} (${id}): ${data.total}점</div>`;
+      });
+
+      const games = [...new Set(allRankings.map(e => e.game))];
+      games.forEach(game => {
+        gameRankings.innerHTML += `<strong>${game}</strong><br>`;
+        const gameEntries = allRankings.filter(e => e.game === game);
+        const topPlayers = {};
+        gameEntries.forEach(entry => {
+          if (!topPlayers[entry.id] || topPlayers[entry.id].score < entry.score) {
+            topPlayers[entry.id] = { name: entry.name, score: entry.score };
+          }
+        });
+        const sortedGame = Object.entries(topPlayers).sort((a, b) => b[1].score - a[1].score);
+        sortedGame.slice(0, 5).forEach(([id, data], idx) => {
+          gameRankings.innerHTML += `${idx + 1}위 - ${data.name} (${id}): ${data.score}점<br>`;
+        });
+        gameRankings.innerHTML += '<br>';
+      });
+
+      rankingSection.classList.toggle('hidden');
     }
 
     window.onload = () => {
@@ -164,6 +255,7 @@
       if (currentUser) {
         document.getElementById('loginSection').classList.add('hidden');
         document.getElementById('menuSection').classList.remove('hidden');
+        updateUserInfo();
         if (currentUser.id === '7410' && currentUser.name.toLowerCase() === 'admin') {
           document.getElementById('adminSection').classList.remove('hidden');
           showAdminPanel();
