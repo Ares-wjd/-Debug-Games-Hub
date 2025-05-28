@@ -1,4 +1,4 @@
-<!-- index.html: 메인 화면 (게임별 최고점 합산 랭킹 + 게임별 개별 랭킹 표시) -->
+<!-- index.html: 메인 화면 (관리자 및 로그인 예시 추가) -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -82,6 +82,11 @@
     .hidden {
       display: none;
     }
+    .note {
+      font-size: 0.9rem;
+      margin-bottom: 15px;
+      color: #ffd700;
+    }
     .ranking-list {
       margin-top: 20px;
       text-align: left;
@@ -115,8 +120,9 @@
     <div class="logo">DBG</div>
     <div id="loginSection">
       <h1>Debug Games Hub</h1>
-      <input type="text" id="studentId" placeholder="학번 입력" />
-      <input type="text" id="studentName" placeholder="이름 입력" />
+      <div class="note">예: 학생 → 학번 1101 / 선생님 → 학번 0000 / 관리자 → 학번 7410, 이름 admin</div>
+      <input type="text" id="studentId" placeholder="학번 (예: 1101, 0000, 7410)" />
+      <input type="text" id="studentName" placeholder="이름 (관리자: admin)" />
       <button onclick="login()">로그인</button>
     </div>
 
@@ -130,6 +136,10 @@
       <button onclick="goToGame('typing-speed-test.html')">⌨️ 타자 속도 테스트 게임</button>
       <button onclick="showRanking()">🏆 전체 및 게임별 랭킹 보기</button>
       <button onclick="logout()" style="background: linear-gradient(135deg, #43cea2, #185a9d); margin-top:20px;">🚪 로그아웃</button>
+      <div id="adminSection" class="hidden" style="margin-top:20px;">
+        <h3>관리자 메뉴</h3>
+        <button onclick="resetAllData()" style="background: linear-gradient(135deg, #ff8c00, #ff0080);">⚠️ 모든 데이터 초기화</button>
+      </div>
       <div id="rankingSection" class="hidden">
         <h3>전체 합산 랭킹 (게임별 최고점 합산)</h3>
         <div class="ranking-list" id="totalRanking"></div>
@@ -151,12 +161,25 @@
       document.getElementById('loginSection').classList.add('hidden');
       document.getElementById('menuSection').classList.remove('hidden');
       updateUserInfo();
+
+      if (id === '7410' && name.toLowerCase() === 'admin') {
+        document.getElementById('adminSection').classList.remove('hidden');
+      }
     }
 
     function logout() {
       localStorage.removeItem('currentUser');
       document.getElementById('menuSection').classList.add('hidden');
       document.getElementById('loginSection').classList.remove('hidden');
+      document.getElementById('adminSection').classList.add('hidden');
+    }
+
+    function resetAllData() {
+      if (confirm('⚠️ 정말로 모든 데이터를 초기화하시겠습니까?')) {
+        localStorage.removeItem('allGameRankings');
+        alert('모든 데이터가 초기화되었습니다.');
+        location.reload();
+      }
     }
 
     function updateUserInfo() {
@@ -187,6 +210,10 @@
       }
     }
 
+    function goToGame(page) {
+      window.location.href = `/-Debug-Games-Hub/${page}`;
+    }
+
     function showRanking() {
       const rankingSection = document.getElementById('rankingSection');
       const totalRanking = document.getElementById('totalRanking');
@@ -201,7 +228,6 @@
         return;
       }
 
-      // 전체 합산 랭킹
       const userScores = {};
       allRankings.forEach(entry => {
         if (!userScores[entry.id]) userScores[entry.id] = { name: entry.name, scores: {}, total: 0 };
@@ -217,7 +243,6 @@
         totalRanking.innerHTML += `<div>${index + 1}위 - ${data.name} (${id}): ${data.total}점</div>`;
       });
 
-      // 게임별 랭킹
       const games = [...new Set(allRankings.map(e => e.game))];
       games.forEach(game => {
         gameRankings.innerHTML += `<strong>${game}</strong><br>`;
@@ -244,6 +269,9 @@
         document.getElementById('loginSection').classList.add('hidden');
         document.getElementById('menuSection').classList.remove('hidden');
         updateUserInfo();
+        if (currentUser.id === '7410' && currentUser.name.toLowerCase() === 'admin') {
+          document.getElementById('adminSection').classList.remove('hidden');
+        }
       }
     };
   </script>
