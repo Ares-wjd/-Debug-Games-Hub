@@ -1,4 +1,4 @@
-<!-- ai-word-game.html: Firebase 연동 + 점수 로직 및 실패 처리 강화 버전 -->
+<!-- ai-word-game.html: Firebase 연동 + 최종 메인화면 복귀 버튼 추가 -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -15,6 +15,7 @@
     button { background: linear-gradient(135deg, #ff416c, #ff4b2b); color: #fff; cursor: pointer; }
     button:hover { transform: scale(1.05); }
     #result { font-size: 1.2em; margin-top: 10px; font-weight: bold; }
+    #finalButtons { margin-top: 20px; }
   </style>
 </head>
 <body>
@@ -32,6 +33,9 @@
       <div id="scoreBoard">점수: 0점</div>
       <div id="result"></div>
       <div id="attempts">남은 시도: 3회</div>
+      <div id="finalButtons" style="display:none;">
+        <button onclick="goBack()">메인으로 돌아가기</button>
+      </div>
     </div>
   </div>
 
@@ -60,11 +64,13 @@
     const attemptsDiv = document.getElementById('attempts');
     const gameExplanation = document.getElementById('gameExplanation');
     const gameArea = document.getElementById('gameArea');
+    const finalButtons = document.getElementById('finalButtons');
     const body = document.body;
 
     function startGame() {
       gameExplanation.style.display = 'none';
       gameArea.style.display = 'block';
+      finalButtons.style.display = 'none';
       score = 0;
       currentIndex = 0;
       loadProblem();
@@ -75,6 +81,7 @@
         saveScore();
         resultDiv.innerHTML = `<span style='color: gold;'>게임 종료! 최종 점수: ${score}점</span>`;
         flashEffect('#ffd700');
+        finalButtons.style.display = 'block';
         return;
       }
       hintStep = 0;
