@@ -1,10 +1,10 @@
-<!-- index.html: 디버그 동아리 메인 페이지 -->
+<!-- index.html: 디버그 동아리 메인 페이지 (수정본) -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>디버그 동아리 게임 모음</title>
+  <title>Debug Games Hub | 디버그 동아리</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
   <style>
     body {
@@ -17,63 +17,72 @@
       align-items: center;
       justify-content: center;
       min-height: 100vh;
+      color: #333;
     }
     header {
       text-align: center;
-      margin-bottom: 30px;
+      margin-bottom: 40px;
     }
     header img {
       width: 100px;
-      margin-bottom: 10px;
+      margin-bottom: 15px;
     }
     header h1 {
       margin: 0;
-      font-size: 2em;
+      font-size: 2.2em;
+    }
+    header p {
+      font-size: 1.1em;
+      color: #555;
     }
     .button-container {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 15px;
-      justify-content: center;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+      width: 90%;
+      max-width: 800px;
     }
     .button {
       background-color: #4a90e2;
       color: white;
-      padding: 15px 25px;
+      padding: 15px 20px;
       border: none;
-      border-radius: 10px;
+      border-radius: 12px;
       font-size: 1em;
+      text-align: center;
+      text-decoration: none;
       cursor: pointer;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.1);
       transition: background-color 0.3s, transform 0.2s;
     }
     .button:hover {
       background-color: #357ab8;
-      transform: translateY(-3px);
+      transform: translateY(-4px);
     }
     footer {
-      margin-top: 40px;
+      margin-top: 50px;
       font-size: 0.9em;
       color: #777;
+      text-align: center;
     }
   </style>
 </head>
 <body>
   <header>
     <img src="A_2D_digital_graphic_logo_for_a_computer_club_name.png" alt="디버그 로고">
-    <h1>디버그 동아리 게임 모음</h1>
-    <p>다양한 게임과 퀴즈를 즐겨보세요!</p>
+    <h1>Debug Games Hub</h1>
+    <p>디버그 동아리의 다양한 게임과 퀴즈를 만나보세요!</p>
   </header>
 
   <div class="button-container">
-    <button class="button" onclick="location.href='ai_word_game.html'">AI 단어 설명 게임</button>
-    <button class="button" onclick="location.href='memory_card_game.html'">기억력 카드 게임</button>
-    <button class="button" onclick="location.href='programming_quiz.html'">프로그래밍 퀴즈 게임</button>
-    <button class="button" onclick="location.href='typing_speed_test.html'">타자 속도 테스트 게임</button>
+    <a class="button" href="ai-word-game.html">AI 단어 설명 게임</a>
+    <a class="button" href="memory-card-game.html">기억력 카드 게임</a>
+    <a class="button" href="programming-quiz.html">프로그래밍 퀴즈 게임</a>
+    <a class="button" href="typing-speed-test.html">타자 속도 테스트 게임</a>
   </div>
 
   <footer>
-    &copy; 2025 디버그 컴퓨터 동아리. 모든 권리 보유.
+    &copy; 2025 디버그 컴퓨터 동아리 | <a href="https://ares-wjd.github.io/-Debug-Games-Hub/" style="color:#4a90e2; text-decoration:none;">GitHub 페이지</a>
   </footer>
 </body>
 </html>
