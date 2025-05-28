@@ -1,15 +1,15 @@
-<!-- programming_quiz.html: 프로그래밍 퀴즈 게임 -->
+<!-- programming-quiz.html: 프로그래밍 퀴즈 게임 (전체 코드, 절대 경로 수정 재업로드) -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>디버그 동아리 | 프로그래밍 퀴즈 게임</title>
+  <title>Debug Games Hub | 프로그래밍 퀴즈 게임</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
   <style>
     body {
       font-family: 'Poppins', sans-serif;
-      background: linear-gradient(135deg, #ece9e6, #ffffff);
+      background: linear-gradient(135deg, #f0f4f8, #d9e2ec);
       margin: 0;
       padding: 0;
       display: flex;
@@ -30,7 +30,7 @@
       display: flex;
       justify-content: space-between;
       margin-bottom: 20px;
-      font-size: 0.9em;
+      font-size: 14px;
     }
     .question-box {
       background: #f9fafb;
@@ -45,7 +45,7 @@
       margin: 8px 0;
       padding: 10px;
       border: none;
-      border-radius: 10px;
+      border-radius: 8px;
       background: #dbeafe;
       cursor: pointer;
       transition: background 0.3s;
@@ -54,30 +54,148 @@
       background: #bfdbfe;
     }
     .feedback {
-      font-size: 1.1em;
+      font-size: 18px;
       margin-top: 10px;
     }
     .hidden { display: none; }
     .result-screen {
-      font-size: 1.1em;
+      font-size: 18px;
     }
-    .restart-btn {
+    .restart-btn, a.button-link {
       margin-top: 20px;
       padding: 10px 20px;
-      font-size: 1em;
+      font-size: 16px;
       border: none;
-      border-radius: 10px;
+      border-radius: 8px;
       background: #4ade80;
       color: white;
       cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
     }
-    .restart-btn:hover {
+    .restart-btn:hover, a.button-link:hover {
       background: #22c55e;
     }
   </style>
 </head>
 <body>
-  <!-- 나머지 게임 코드 (이전 제공 코드에서 붙여넣기) -->
-  <!-- 주의: 전체 HTML 코드가 너무 길어 생략, 캔버스에 전체 코드 제공 예정 -->
+  <div class="container">
+    <div class="status-bar">
+      <div>라운드: <span id="round">1</span></div>
+      <div>언어: <span id="language">Python</span></div>
+      <div>점수: <span id="score">0</span></div>
+      <div>남은 시간: <span id="timer">30</span>s</div>
+    </div>
+    <div class="question-box" id="question-box"></div>
+    <div class="options" id="options"></div>
+    <div class="feedback hidden" id="feedback"></div>
+    <div class="result-screen hidden" id="result-screen">
+      <h2>게임 종료!</h2>
+      <p>최종 점수: <span id="final-score"></span></p>
+      <p>마지막 라운드: <span id="final-round"></span></p>
+      <p>맞힌 문제 수: <span id="final-questions"></span></p>
+      <button class="restart-btn" onclick="restartGame()">게임 재시작</button>
+      <a class="button-link" href="/-Debug-Games-Hub/index.html">메인으로 돌아가기</a>
+    </div>
+  </div>
+
+  <script>
+    const questions = [
+      { round: 1, language: 'Python', question: 'Python에서 리스트의 길이를 구하는 함수는?', code: 'my_list = [1, 2, 3]\nprint(____(my_list))', options: ['size()', 'length()', 'len()', 'count()'], answer: 2 },
+      { round: 1, language: 'Python', question: 'Python에서 문자열을 소문자로 변환하는 메서드는?', code: 'text = "HELLO"\nprint(text.____())', options: ['lower()', 'down()', 'small()', 'minify()'], answer: 0 },
+      { round: 1, language: 'Python', question: 'Python에서 반복문을 만들 때 사용하는 키워드는?', code: 'for i in range(5):\n    print(i)', options: ['repeat', 'for', 'loop', 'whilefor'], answer: 1 },
+      { round: 2, language: 'Python', question: 'Python에서 예외 처리를 위해 사용하는 키워드는?', code: 'try:\n    x = 1 / 0\nexcept ZeroDivisionError:\n    print("에러")', options: ['except', 'catch', 'error', 'fail'], answer: 0 },
+      { round: 2, language: 'JavaScript', question: 'JavaScript에서 배열의 길이를 구하는 속성은?', code: 'const arr = [1, 2, 3];\nconsole.log(arr.___);', options: ['size', 'length', 'count', 'number'], answer: 1 },
+      { round: 3, language: 'JavaScript', question: 'JavaScript에서 화살표 함수는 어떤 모양인가?', code: 'const add = (a, b) => a + b;', options: ['function(a, b)', '(a, b) =>', 'def(a, b):', 'lambda a, b:'], answer: 1 }
+    ];
+
+    let currentQuestion = 0;
+    let score = 0;
+    let timer;
+    let timeLeft = 30;
+    let correctCount = 0;
+
+    function startGame() {
+      showQuestion();
+      startTimer();
+    }
+
+    function showQuestion() {
+      const q = questions[currentQuestion];
+      document.getElementById('round').innerText = q.round;
+      document.getElementById('language').innerText = q.language;
+      document.getElementById('score').innerText = score;
+      document.getElementById('question-box').innerHTML = `<strong>Q: ${q.question}</strong><pre>${q.code}</pre>`;
+      const optionsDiv = document.getElementById('options');
+      optionsDiv.innerHTML = '';
+      q.options.forEach((opt, index) => {
+        const btn = document.createElement('button');
+        btn.innerText = opt;
+        btn.onclick = () => checkAnswer(index);
+        optionsDiv.appendChild(btn);
+      });
+    }
+
+    function startTimer() {
+      timeLeft = 30;
+      document.getElementById('timer').innerText = timeLeft;
+      clearInterval(timer);
+      timer = setInterval(() => {
+        timeLeft--;
+        document.getElementById('timer').innerText = timeLeft;
+        if (timeLeft <= 0) {
+          clearInterval(timer);
+          endGame();
+        }
+      }, 1000);
+    }
+
+    function checkAnswer(selected) {
+      const q = questions[currentQuestion];
+      const feedback = document.getElementById('feedback');
+      feedback.classList.remove('hidden');
+      if (selected === q.answer) {
+        feedback.innerText = '✅ 정답!';
+        correctCount++;
+        score += q.round === 1 ? 100 : q.round === 2 ? 200 : 300;
+        currentQuestion++;
+        if (currentQuestion < questions.length) {
+          showQuestion();
+          startTimer();
+        } else {
+          endGame();
+        }
+      } else {
+        feedback.innerText = '❌ 오답! 게임 종료.';
+        endGame();
+      }
+    }
+
+    function endGame() {
+      clearInterval(timer);
+      document.querySelector('.question-box').classList.add('hidden');
+      document.querySelector('.options').classList.add('hidden');
+      document.querySelector('.status-bar').classList.add('hidden');
+      document.getElementById('feedback').classList.add('hidden');
+      const resultScreen = document.getElementById('result-screen');
+      resultScreen.classList.remove('hidden');
+      document.getElementById('final-score').innerText = score;
+      document.getElementById('final-round').innerText = questions[currentQuestion]?.round || questions[questions.length - 1].round;
+      document.getElementById('final-questions').innerText = correctCount;
+    }
+
+    function restartGame() {
+      currentQuestion = 0;
+      score = 0;
+      correctCount = 0;
+      document.querySelector('.question-box').classList.remove('hidden');
+      document.querySelector('.options').classList.remove('hidden');
+      document.querySelector('.status-bar').classList.remove('hidden');
+      document.getElementById('result-screen').classList.add('hidden');
+      startGame();
+    }
+
+    window.onload = startGame;
+  </script>
 </body>
 </html>
