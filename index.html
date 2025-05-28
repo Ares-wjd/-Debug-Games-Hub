@@ -1,4 +1,4 @@
-<!-- index.html: 메인 화면 (미래형 모던 디자인 + 로고 추가) -->
+<!-- index.html: 메인 화면 (미래형 모던 디자인 + 본인 정보 + 전체 합산 점수 + 게임별 점수 표시) -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -19,28 +19,42 @@
       color: #fff;
     }
     .container {
-      background: rgba(255, 255, 255, 0.05);
-      backdrop-filter: blur(10px);
+      background: rgba(255, 255, 255, 0.07);
+      backdrop-filter: blur(15px);
       width: 90%;
       max-width: 700px;
-      padding: 40px;
-      border-radius: 20px;
-      box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+      padding: 50px;
+      border-radius: 24px;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.5);
       text-align: center;
+      transition: transform 0.3s;
+    }
+    .container:hover {
+      transform: translateY(-5px);
     }
     h1 {
       margin-bottom: 10px;
-      font-size: 2rem;
+      font-size: 2.5rem;
+      letter-spacing: 2px;
     }
     .logo {
-      width: 80px;
-      height: 80px;
+      width: 100px;
+      height: 100px;
       margin-bottom: 20px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #6a11cb, #2575fc);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 2rem;
+      font-weight: 700;
+      color: #fff;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.4);
     }
     input, button {
       width: 100%;
-      padding: 12px;
-      margin: 10px 0;
+      padding: 14px;
+      margin: 12px 0;
       font-size: 1em;
       border: none;
       border-radius: 12px;
@@ -55,14 +69,15 @@
       color: rgba(255,255,255,0.6);
     }
     button {
-      background: linear-gradient(135deg, #6a11cb, #2575fc);
+      background: linear-gradient(135deg, #ff416c, #ff4b2b);
       color: #fff;
       font-weight: 600;
       cursor: pointer;
-      transition: transform 0.2s;
+      transition: transform 0.2s, box-shadow 0.2s;
     }
     button:hover {
       transform: scale(1.05);
+      box-shadow: 0 6px 20px rgba(255,75,43,0.5);
     }
     .hidden {
       display: none;
@@ -71,21 +86,33 @@
       margin-top: 20px;
       text-align: left;
       background: rgba(255, 255, 255, 0.1);
-      padding: 10px;
-      border-radius: 12px;
+      padding: 15px;
+      border-radius: 16px;
     }
     .ranking-list div {
-      padding: 5px 0;
+      padding: 6px 0;
       border-bottom: 1px solid rgba(255,255,255,0.2);
     }
     .ranking-list div:last-child {
       border-bottom: none;
     }
+    .user-info {
+      margin-bottom: 15px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #a5d6ff;
+    }
+    .user-score {
+      margin-bottom: 20px;
+      font-size: 1rem;
+      color: #ffd700;
+      text-align: left;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <img src="https://via.placeholder.com/80?text=D" alt="디버그 로고" class="logo">
+    <div class="logo">DBG</div>
     <div id="loginSection">
       <h1>Debug Games Hub</h1>
       <input type="text" id="studentId" placeholder="학번 입력" />
@@ -94,12 +121,15 @@
     </div>
 
     <div id="menuSection" class="hidden">
+      <div class="user-info" id="userInfo"></div>
+      <div class="user-score" id="userScore"></div>
       <h2>게임 선택</h2>
       <button onclick="goToGame('ai-word-game.html')">🤖 AI 단어 설명 게임</button>
       <button onclick="goToGame('memory-card-game.html')">🧠 기억력 카드 게임</button>
       <button onclick="goToGame('programming-quiz.html')">💻 프로그래밍 퀴즈 게임</button>
       <button onclick="goToGame('typing-speed-test.html')">⌨️ 타자 속도 테스트 게임</button>
       <button onclick="showRanking()">🏆 랭킹 보기</button>
+      <button onclick="logout()" style="background: linear-gradient(135deg, #43cea2, #185a9d); margin-top:20px;">🚪 로그아웃</button>
       <div id="rankingSection" class="hidden">
         <h3>상위 5명 랭킹</h3>
         <div class="ranking-list" id="rankingList"></div>
@@ -118,6 +148,35 @@
       localStorage.setItem('currentUser', JSON.stringify({ id, name }));
       document.getElementById('loginSection').classList.add('hidden');
       document.getElementById('menuSection').classList.remove('hidden');
+      updateUserInfo();
+    }
+
+    function logout() {
+      localStorage.removeItem('currentUser');
+      document.getElementById('menuSection').classList.add('hidden');
+      document.getElementById('loginSection').classList.remove('hidden');
+    }
+
+    function updateUserInfo() {
+      const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+      if (currentUser) {
+        document.getElementById('userInfo').textContent = `환영합니다, ${currentUser.name} (${currentUser.id})님!`;
+
+        const allRankings = JSON.parse(localStorage.getItem('allGameRankings') || '[]');
+        const userEntries = allRankings.filter(e => e.id === currentUser.id);
+
+        if (userEntries.length > 0) {
+          let totalScore = 0;
+          let details = '';
+          userEntries.forEach(entry => {
+            totalScore += entry.score;
+            details += `• ${entry.game}: ${entry.score}점\n`;
+          });
+          document.getElementById('userScore').innerHTML = `내 전체 합산 점수: ${totalScore}점<br>${details.replace(/\n/g, '<br>')}`;
+        } else {
+          document.getElementById('userScore').innerHTML = `내 전체 합산 점수: 기록 없음`;
+        }
+      }
     }
 
     function goToGame(page) {
@@ -134,11 +193,20 @@
         rankingList.innerHTML = '<div>랭킹 데이터가 없습니다.</div>';
       } else {
         allRankings.slice(0, 5).forEach((entry, index) => {
-          rankingList.innerHTML += `<div>${index + 1}위 - ${entry.name} (${entry.id}) : ${entry.score}점</div>`;
+          rankingList.innerHTML += `<div>${index + 1}위 - ${entry.name} (${entry.id}) : ${entry.score}점 (${entry.game})</div>`;
         });
       }
       rankingSection.classList.toggle('hidden');
     }
+
+    window.onload = () => {
+      const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+      if (currentUser) {
+        document.getElementById('loginSection').classList.add('hidden');
+        document.getElementById('menuSection').classList.remove('hidden');
+        updateUserInfo();
+      }
+    };
   </script>
 </body>
 </html>
