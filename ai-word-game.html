@@ -1,4 +1,4 @@
-<!-- ai-word-game.html: Firebase 연동 버전 -->
+<!-- ai-word-game.html: Firebase 연동 + 점수 로직 및 실패 처리 강화 버전 -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -8,25 +8,31 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
   <style>
-    body { font-family: 'Poppins', sans-serif; background: linear-gradient(135deg, #0f2027, #203a43, #2c5364); margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; color: #fff; }
+    body { font-family: 'Poppins', sans-serif; background: linear-gradient(135deg, #0f2027, #203a43, #2c5364); margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; color: #fff; transition: background-color 0.3s; }
     .container { background: rgba(255, 255, 255, 0.07); backdrop-filter: blur(15px); width: 90%; max-width: 600px; padding: 30px; border-radius: 16px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); text-align: center; }
     input, button { padding: 12px; margin: 10px 0; font-size: 1em; border-radius: 8px; border: none; }
     input { width: 80%; }
     button { background: linear-gradient(135deg, #ff416c, #ff4b2b); color: #fff; cursor: pointer; }
     button:hover { transform: scale(1.05); }
+    #result { font-size: 1.2em; margin-top: 10px; font-weight: bold; }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>🤖 AI 단어 설명 게임</h1>
-    <div id="gameArea">
+    <div id="gameExplanation">
+      <p>AI가 하나씩 설명을 추가하며 정답을 맞히게 됩니다.<br>게임을 시작하려면 아래 버튼을 눌러주세요.</p>
+      <button onclick="startGame()">게임 시작</button>
+      <button onclick="goBack()">메인으로 돌아가기</button>
+    </div>
+    <div id="gameArea" style="display:none;">
       <div id="hint">힌트가 여기에 표시됩니다</div>
       <input type="text" id="guessInput" placeholder="정답을 입력하세요" onkeydown="if(event.key==='Enter') checkAnswer()">
       <button onclick="checkAnswer()">제출</button>
       <div id="scoreBoard">점수: 0점</div>
       <div id="result"></div>
+      <div id="attempts">남은 시도: 3회</div>
     </div>
-    <button onclick="goBack()">메인으로 돌아가기</button>
   </div>
 
   <script>
@@ -45,34 +51,80 @@
       { answer: "의자", hints: ["앉을 수 있음", "네 다리", "책상 옆에 있음"] },
       { answer: "토끼", hints: ["귀가 긺", "풀을 먹음", "깡총깡총"] }
     ];
-    let currentIndex = 0, score = 0;
+
+    let currentIndex = 0, score = 0, hintStep = 0, attempts = 3;
     const hintDiv = document.getElementById('hint');
     const resultDiv = document.getElementById('result');
     const scoreBoard = document.getElementById('scoreBoard');
     const guessInput = document.getElementById('guessInput');
+    const attemptsDiv = document.getElementById('attempts');
+    const gameExplanation = document.getElementById('gameExplanation');
+    const gameArea = document.getElementById('gameArea');
+    const body = document.body;
+
+    function startGame() {
+      gameExplanation.style.display = 'none';
+      gameArea.style.display = 'block';
+      score = 0;
+      currentIndex = 0;
+      loadProblem();
+    }
 
     function loadProblem() {
       if (currentIndex >= problems.length) {
         saveScore();
-        resultDiv.textContent = `게임 종료! 최종 점수: ${score}점`;
+        resultDiv.innerHTML = `<span style='color: gold;'>게임 종료! 최종 점수: ${score}점</span>`;
+        flashEffect('#ffd700');
         return;
       }
-      hintDiv.textContent = problems[currentIndex].hints.join(', ');
+      hintStep = 0;
+      attempts = 3;
+      attemptsDiv.textContent = `남은 시도: ${attempts}회`;
+      showNextHint();
       guessInput.value = '';
+      resultDiv.textContent = '';
+    }
+
+    function showNextHint() {
+      const currentHints = problems[currentIndex].hints;
+      if (hintStep < currentHints.length) {
+        hintDiv.textContent = currentHints.slice(0, hintStep + 1).join(', ');
+        hintStep++;
+      }
     }
 
     function checkAnswer() {
       const input = guessInput.value.trim();
       if (!input) return;
       if (input === problems[currentIndex].answer) {
-        score += 25;
-        resultDiv.textContent = `정답! +25점`;
+        let points = attempts === 3 ? 25 : attempts === 2 ? 15 : 5;
+        score += points;
+        resultDiv.innerHTML = `<span style='color: #4caf50;'>정답! +${points}점</span>`;
+        scoreBoard.textContent = `점수: ${score}점`;
+        flashEffect('#4caf50');
+        currentIndex++;
+        setTimeout(loadProblem, 1000);
       } else {
-        resultDiv.textContent = `오답!`; 
+        attempts--;
+        if (attempts > 0) {
+          resultDiv.innerHTML = `<span style='color: #f44336;'>오답! 다음 힌트 추가 (남은 시도 ${attempts}회)</span>`;
+          flashEffect('#f44336');
+          attemptsDiv.textContent = `남은 시도: ${attempts}회`;
+          showNextHint();
+        } else {
+          resultDiv.innerHTML = `<span style='color: #f44336;'>실패! 정답은 "${problems[currentIndex].answer}"였습니다.</span>`;
+          flashEffect('#f44336');
+          currentIndex++;
+          setTimeout(loadProblem, 2000);
+        }
       }
-      scoreBoard.textContent = `점수: ${score}점`;
-      currentIndex++;
-      setTimeout(loadProblem, 1000);
+      guessInput.value = '';
+    }
+
+    function flashEffect(color) {
+      const original = body.style.background;
+      body.style.background = color;
+      setTimeout(() => { body.style.background = ''; }, 300);
     }
 
     function saveScore() {
@@ -89,13 +141,12 @@
       const updates = {};
       updates['/rankings/' + newKey] = newEntry;
       db.ref().update(updates);
+      alert(`게임 종료! 최종 점수: ${score}점`);
     }
 
     function goBack() {
       window.location.href = '/-Debug-Games-Hub/index.html';
     }
-
-    window.onload = loadProblem;
   </script>
 </body>
 </html>
