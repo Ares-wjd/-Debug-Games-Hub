@@ -1,4 +1,4 @@
-<!-- index.html: 최종 메인 페이지 (logo.png 적용) -->
+<!-- index.html: 최종 메인 페이지 (logo.png 적용 + 관리자 상세 보기 기능 추가) -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -24,6 +24,10 @@
     .ranking-list div:last-child { border-bottom: none; }
     .admin-panel { background: rgba(255, 255, 255, 0.1); padding: 20px; border-radius: 16px; margin-top: 20px; text-align: left; }
     .admin-panel h4 { margin: 10px 0; }
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; }
+    .modal-content { background: #fff; color: #000; padding: 20px; border-radius: 12px; width: 80%; max-width: 600px; max-height: 80%; overflow-y: auto; }
+    .close-btn { float: right; background: #333; color: #fff; border: none; padding: 5px 10px; border-radius: 6px; cursor: pointer; }
+    .close-btn:hover { background: #555; }
   </style>
 </head>
 <body>
@@ -65,6 +69,13 @@
         <h3>게임별 랭킹</h3>
         <div class="ranking-list" id="gameRankings"></div>
       </div>
+    </div>
+  </div>
+
+  <div class="modal" id="detailModal">
+    <div class="modal-content">
+      <button class="close-btn" onclick="closeModal()">닫기</button>
+      <div id="detailContent"></div>
     </div>
   </div>
 
@@ -143,7 +154,8 @@
 
       const userScores = {};
       allRankings.forEach(entry => {
-        if (!userScores[entry.id]) userScores[entry.id] = { name: entry.name, scores: {}, total: 0, count: 0 };
+        if (!userScores[entry.id]) userScores[entry.id] = { name: entry.name, records: [], scores: {}, total: 0, count: 0 };
+        userScores[entry.id].records.push(entry);
         if (!userScores[entry.id].scores[entry.game] || userScores[entry.id].scores[entry.game] < entry.score) {
           userScores[entry.id].scores[entry.game] = entry.score;
         }
@@ -154,13 +166,34 @@
       }
 
       Object.entries(userScores).forEach(([id, data]) => {
-        userListDiv.innerHTML += `<div>🔹 ${data.name} (${id}): 총합 ${data.total}점, 기록 ${data.count}개</div>`;
+        userListDiv.innerHTML += `<div>🔹 <button onclick="showUserDetails('${id}')">${data.name} (${id})</button>: 총합 ${data.total}점, 기록 ${data.count}개</div>`;
       });
 
       const totalUsers = Object.keys(userScores).length;
       const totalGames = allRankings.length;
       const averageScore = (Object.values(userScores).reduce((sum, u) => sum + u.total, 0) / totalUsers || 0).toFixed(2);
       statsDiv.innerHTML = `총 사용자 수: ${totalUsers}<br>총 플레이 기록 수: ${totalGames}<br>평균 총합 점수: ${averageScore}점`;
+    }
+
+    function showUserDetails(userId) {
+      const allRankings = JSON.parse(localStorage.getItem('allGameRankings') || '[]');
+      const userEntries = allRankings.filter(e => e.id === userId);
+      if (userEntries.length === 0) {
+        document.getElementById('detailContent').innerHTML = '데이터 없음';
+        document.getElementById('detailModal').style.display = 'flex';
+        return;
+      }
+      let content = `<h3>${userEntries[0].name} (${userId}) 상세 기록</h3><ul>`;
+      userEntries.forEach(entry => {
+        content += `<li>${entry.time || '시간 정보 없음'} - ${entry.game}: ${entry.score}점</li>`;
+      });
+      content += '</ul>';
+      document.getElementById('detailContent').innerHTML = content;
+      document.getElementById('detailModal').style.display = 'flex';
+    }
+
+    function closeModal() {
+      document.getElementById('detailModal').style.display = 'none';
     }
 
     function goToGame(page) {
