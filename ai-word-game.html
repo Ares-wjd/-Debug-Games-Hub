@@ -1,10 +1,10 @@
-<!-- ai_word_game.html: AI 단어 설명 게임 -->
+<!-- ai-word-game.html: AI 단어 설명 게임 (전체 코드 포함, 절대 경로 수정 버전) -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>디버그 동아리 | AI 단어 설명 게임</title>
+  <title>Debug Games Hub | AI 단어 설명 게임</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
   <style>
     body {
@@ -37,7 +37,7 @@
       width: 60px;
       height: auto;
     }
-    button {
+    button, a.button-link {
       padding: 12px 24px;
       font-size: 1em;
       color: white;
@@ -46,9 +46,12 @@
       border-radius: 10px;
       cursor: pointer;
       margin: 5px;
+      display: inline-block;
+      text-decoration: none;
+      text-align: center;
       transition: background-color 0.3s, transform 0.2s;
     }
-    button:hover {
+    button:hover, a.button-link:hover {
       background-color: #45a049;
       transform: translateY(-2px);
     }
@@ -88,7 +91,226 @@
   </style>
 </head>
 <body>
-  <!-- 나머지 게임 코드 (이전 제공 코드에서 붙여넣기) -->
-  <!-- 주의: 전체 HTML 코드가 너무 길어 생략, 캔버스에 전체 코드 제공 예정 -->
+  <div class="container" id="mainContainer">
+    <header>
+      <img src="/debug-games-hub/A_2D_digital_graphic_logo_for_a_computer_club_name.png" alt="디버그 로고">
+      <h1>AI 단어 설명 게임</h1>
+    </header>
+
+    <div id="startScreen">
+      <h2>AI 단어 설명 게임</h2>
+      <button onclick="showLogin()">게임 시작</button>
+      <button onclick="showExplanation()">게임 설명</button>
+      <a class="button-link" href="/debug-games-hub/index.html">메인으로 돌아가기</a>
+    </div>
+
+    <div id="explanationScreen" style="display:none;">
+      <h2>게임 설명</h2>
+      <p>
+        인공지능 힌트를 보고 정답 단어를 맞히는 게임입니다.<br>
+        - 총 180초<br>
+        - 문제당 최대 3회 시도<br>
+        - 점수: 1회 성공 25점, 2회 15점, 3회 5점<br>
+        최종 점수는 상위 5명의 랭킹에 등록됩니다.
+      </p>
+      <button onclick="backToStart()">돌아가기</button>
+    </div>
+
+    <div id="loginForm" style="display:none;">
+      <h2>이름과 학번을 입력하세요</h2>
+      <input type="text" id="studentId" placeholder="학번" />
+      <input type="text" id="studentName" placeholder="이름" />
+      <button onclick="login()">시작</button>
+    </div>
+
+    <div id="gameContainer" style="display:none;">
+      <h2>단어 설명 게임</h2>
+      <div id="timer">남은 시간: 180초</div>
+      <div id="timeBarContainer"><div id="timeBar"></div></div>
+      <div id="scoreBoard">점수: 0점</div>
+      <div id="attempts">남은 시도: 3</div>
+      <div id="hint">힌트가 여기에 표시됩니다</div>
+      <input type="text" id="guessInput" placeholder="정답을 입력하세요" onkeydown="handleKey(event)" />
+      <button onclick="checkAnswer()">제출</button>
+      <div id="result"></div>
+      <div id="answerDisplay"></div>
+    </div>
+
+    <div id="endScreen" style="display:none;">
+      <h2>게임 종료!</h2>
+      <div id="finalScore"></div>
+      <button onclick="goToStart()">처음으로 가기</button>
+      <button onclick="restartGame()">다시하기</button>
+      <a class="button-link" href="/debug-games-hub/index.html">메인으로 돌아가기</a>
+    </div>
+
+    <div id="ranking">
+      <h3>랭킹</h3>
+      <div id="rankingList"></div>
+    </div>
+  </div>
+
+  <script>
+    let problems = [
+      { answer: "의자", hints: ["앉을 수 있음", "네 다리", "책상 옆에 있음"] },
+      { answer: "토끼", hints: ["귀가 긺", "풀을 먹음", "깡총깡총"] },
+    ];
+
+    let currentProblem, currentHints, attempts = 3, score = 0, usedIndices = [];
+    let timeLeft = 180, timer;
+
+    window.onload = () => {
+      document.getElementById("startScreen").style.display = "block";
+      showRanking(JSON.parse(localStorage.getItem("rankings") || "[]"));
+    };
+
+    function showLogin() {
+      document.getElementById("startScreen").style.display = "none";
+      document.getElementById("loginForm").style.display = "block";
+    }
+
+    function showExplanation() {
+      document.getElementById("startScreen").style.display = "none";
+      document.getElementById("explanationScreen").style.display = "block";
+    }
+
+    function backToStart() {
+      document.getElementById("explanationScreen").style.display = "none";
+      document.getElementById("startScreen").style.display = "block";
+    }
+
+    function login() {
+      document.getElementById("loginForm").style.display = "none";
+      document.getElementById("gameContainer").style.display = "block";
+      startGame();
+    }
+
+    function startGame() {
+      timeLeft = 180;
+      score = 0;
+      usedIndices = [];
+      nextProblem();
+      timer = setInterval(() => {
+        document.getElementById("timer").textContent = `남은 시간: ${timeLeft}초`;
+        updateTimeBar();
+        timeLeft--;
+        if (timeLeft < 0) {
+          clearInterval(timer);
+          endGame();
+        }
+      }, 1000);
+    }
+
+    function nextProblem() {
+      if (usedIndices.length === problems.length) {
+        clearInterval(timer);
+        endGame();
+        return;
+      }
+      let index;
+      do { index = Math.floor(Math.random() * problems.length); }
+      while (usedIndices.includes(index));
+      usedIndices.push(index);
+      currentProblem = problems[index];
+      currentHints = [...currentProblem.hints];
+      attempts = 3;
+      updateUI();
+    }
+
+    function updateUI() {
+      document.getElementById("attempts").textContent = `남은 시도: ${attempts}`;
+      document.getElementById("hint").textContent = currentHints[3 - attempts];
+      document.getElementById("guessInput").value = "";
+      document.getElementById("result").textContent = "";
+    }
+
+    function calculatePoints(attemptsLeft) {
+      if (attemptsLeft === 3) return 25;
+      if (attemptsLeft === 2) return 15;
+      if (attemptsLeft === 1) return 5;
+      return 0;
+    }
+
+    function checkAnswer() {
+      const input = document.getElementById("guessInput").value.trim();
+      const container = document.getElementById("mainContainer");
+      if (!input) return;
+      if (input === currentProblem.answer) {
+        let point = calculatePoints(attempts);
+        score += point;
+        document.getElementById("scoreBoard").textContent = `점수: ${score}점`;
+        document.getElementById("result").textContent = `정답! (+${point}점)`;
+        container.classList.add("flash-correct");
+        setTimeout(() => {
+          container.classList.remove("flash-correct");
+          nextProblem();
+        }, 500);
+      } else {
+        attempts--;
+        container.classList.add("flash-wrong");
+        setTimeout(() => container.classList.remove("flash-wrong"), 500);
+        if (attempts === 0) {
+          document.getElementById("result").textContent = `오답!`;
+          document.getElementById("answerDisplay").textContent = `정답: ${currentProblem.answer}`;
+          setTimeout(nextProblem, 2000);
+        } else {
+          updateUI();
+        }
+      }
+    }
+
+    function handleKey(event) {
+      if (event.key === "Enter") checkAnswer();
+    }
+
+    function updateTimeBar() {
+      const percent = Math.max((timeLeft / 180) * 100, 0);
+      document.getElementById("timeBar").style.width = percent + "%";
+      document.getElementById("timeBar").style.backgroundColor = percent < 30 ? "#e74c3c" : percent < 60 ? "#f1c40f" : "#4CAF50";
+    }
+
+    function endGame() {
+      document.getElementById("gameContainer").style.display = "none";
+      document.getElementById("endScreen").style.display = "block";
+      const name = document.getElementById("studentName").value;
+      const id = document.getElementById("studentId").value;
+      const newEntry = { id, name, score };
+      let rankings = JSON.parse(localStorage.getItem("rankings") || "[]");
+      const idx = rankings.findIndex(e => e.id === id);
+      if (idx !== -1) {
+        if (rankings[idx].score < score) rankings[idx].score = score;
+      } else {
+        rankings.push(newEntry);
+      }
+      rankings.sort((a, b) => b.score - a.score);
+      localStorage.setItem("rankings", JSON.stringify(rankings));
+      showRanking(rankings);
+      const myRank = rankings.findIndex(e => e.id === id) + 1;
+      document.getElementById("finalScore").textContent = `최종 점수: ${score}점 (전체 ${myRank}위)`;
+    }
+
+    function goToStart() {
+      document.getElementById("endScreen").style.display = "none";
+      document.getElementById("startScreen").style.display = "block";
+    }
+
+    function restartGame() {
+      document.getElementById("endScreen").style.display = "none";
+      document.getElementById("gameContainer").style.display = "block";
+      startGame();
+    }
+
+    function showRanking(rankings) {
+      const list = document.getElementById("rankingList");
+      list.innerHTML = "";
+      rankings.slice(0, 5).forEach((e, i) => {
+        const card = document.createElement("div");
+        card.className = "ranking-card";
+        const label = e.id === document.getElementById("studentId").value ? " (본인)" : "";
+        card.textContent = `${i + 1}위 - ${e.name} (${e.id}): ${e.score}점${label}`;
+        list.appendChild(card);
+      });
+    }
+  </script>
 </body>
 </html>
