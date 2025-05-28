@@ -1,4 +1,4 @@
-<!-- index.html: 관리자 기능 확장 (시간 기록, 개별 삭제 기능 추가) -->
+<!-- index.html: 관리자 계정 기능 포함 전체 최신 코드 -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -19,7 +19,7 @@
     button:hover { transform: scale(1.05); box-shadow: 0 6px 20px rgba(255,75,43,0.5); }
     .hidden { display: none; }
     .note { font-size: 0.9rem; margin-bottom: 15px; color: #ffd700; }
-    .admin-panel { background: rgba(255, 255, 255, 0.1); padding: 20px; border-radius: 16px; margin-top: 20px; text-align: left; }
+    .admin-panel, .ranking-section { background: rgba(255, 255, 255, 0.1); padding: 20px; border-radius: 16px; margin-top: 20px; text-align: left; }
     .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; }
     .modal-content { background: #fff; color: #000; padding: 20px; border-radius: 12px; width: 80%; max-width: 600px; max-height: 80%; overflow-y: auto; }
     .close-btn { float: right; background: #333; color: #fff; border: none; padding: 5px 10px; border-radius: 6px; cursor: pointer; }
@@ -47,6 +47,9 @@
       <div id="adminSection" class="hidden admin-panel">
         <h3>관리자 메뉴</h3>
         <div id="userList"></div>
+        <h4>📊 랭킹 보기</h4>
+        <button onclick="showRanking()">🏆 랭킹 보기</button>
+        <div id="rankingContent" class="ranking-section hidden"></div>
       </div>
     </div>
   </div>
@@ -90,12 +93,13 @@
 
       const userMap = {};
       allRankings.forEach(entry => {
+        if (!entry.time) entry.time = new Date().toLocaleString();
         if (!userMap[entry.id]) userMap[entry.id] = { name: entry.name, records: [] };
         userMap[entry.id].records.push(entry);
       });
 
       Object.entries(userMap).forEach(([id, data]) => {
-        userListDiv.innerHTML += `<div>🔹 <button onclick="showUserDetails('${id}')">${data.name} (${id})</button> <button onclick="deleteUser('${id}')">❌ 삭제</button></div>`;
+        userListDiv.innerHTML += `<div>🔹 <button onclick="showUserDetails('${id}')">${data.name} (${id})</button> <button onclick="deleteUser('${id}')">❌ 전체 삭제</button></div>`;
       });
     }
 
@@ -107,8 +111,7 @@
         content += '<p>데이터 없음</p>';
       } else {
         userEntries.forEach((entry, index) => {
-          if (!entry.time) entry.time = new Date().toLocaleString();
-          content += `<div class="record-item">${entry.time} - ${entry.game}: ${entry.score}점 <button onclick="deleteRecord('${userId}', ${index})">삭제</button></div>`;
+          content += `<div class="record-item">${entry.time} - ${entry.game}: ${entry.score}점 <button onclick="deleteRecord('${userId}', ${index})">개별 삭제</button></div>`;
         });
       }
       document.getElementById('detailContent').innerHTML = content;
@@ -133,6 +136,22 @@
       localStorage.setItem('allGameRankings', JSON.stringify(updatedRankings));
       alert('기록이 삭제되었습니다.');
       showUserDetails(userId);
+    }
+
+    function showRanking() {
+      const rankingDiv = document.getElementById('rankingContent');
+      rankingDiv.innerHTML = '';
+      const allRankings = JSON.parse(localStorage.getItem('allGameRankings') || '[]');
+      const userScores = {};
+      allRankings.forEach(entry => {
+        if (!userScores[entry.id]) userScores[entry.id] = { name: entry.name, total: 0 };
+        userScores[entry.id].total += entry.score;
+      });
+      const sorted = Object.entries(userScores).sort((a, b) => b[1].total - a[1].total);
+      sorted.forEach(([id, data], idx) => {
+        rankingDiv.innerHTML += `<div>${idx + 1}위 - ${data.name} (${id}): ${data.total}점</div>`;
+      });
+      rankingDiv.classList.toggle('hidden');
     }
 
     function closeModal() {
