@@ -1,158 +1,101 @@
-<!-- ai-word-game.html: 1번 게임 (AI 단어 설명 게임) 최신 버전 - 입력창 초기화 추가 -->
+<!-- ai-word-game.html: Firebase 연동 버전 -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Debug Games Hub | AI 단어 설명 게임</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet">
+  <title>디버그 동아리 | AI 단어 설명 게임</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
   <style>
     body { font-family: 'Poppins', sans-serif; background: linear-gradient(135deg, #0f2027, #203a43, #2c5364); margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; color: #fff; }
-    .container { background: rgba(255, 255, 255, 0.07); backdrop-filter: blur(15px); width: 90%; max-width: 700px; padding: 40px; border-radius: 24px; box-shadow: 0 12px 40px rgba(0,0,0,0.5); text-align: center; transition: transform 0.3s; }
-    .container:hover { transform: translateY(-5px); }
-    h1 { margin-bottom: 20px; font-size: 2rem; letter-spacing: 1px; }
-    .logo img { width: 80px; height: 80px; margin-bottom: 15px; border-radius: 50%; object-fit: cover; }
-    button, input { width: 100%; padding: 12px; margin: 10px 0; font-size: 1em; border: none; border-radius: 12px; outline: none; }
-    input { background: rgba(255, 255, 255, 0.1); color: #fff; border: 1px solid rgba(255,255,255,0.3); }
-    input::placeholder { color: rgba(255,255,255,0.6); }
-    button { background: linear-gradient(135deg, #ff416c, #ff4b2b); color: #fff; font-weight: 600; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
-    button:hover { transform: scale(1.05); box-shadow: 0 6px 20px rgba(255,75,43,0.5); }
-    .status, .scoreboard { margin: 10px 0; }
-    #timeBarContainer { width: 100%; height: 10px; background-color: #ddd; border-radius: 5px; margin-top: 10px; overflow: hidden; }
-    #timeBar { width: 100%; height: 100%; background-color: #4CAF50; transition: width 1s linear; }
-    .flash-correct { animation: flashGreen 0.3s; }
-    .flash-wrong { animation: flashRed 0.3s; }
-    @keyframes flashGreen { from { background-color: #d4edda; } to { background-color: transparent; } }
-    @keyframes flashRed { from { background-color: #f8d7da; } to { background-color: transparent; } }
+    .container { background: rgba(255, 255, 255, 0.07); backdrop-filter: blur(15px); width: 90%; max-width: 600px; padding: 30px; border-radius: 16px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); text-align: center; }
+    input, button { padding: 12px; margin: 10px 0; font-size: 1em; border-radius: 8px; border: none; }
+    input { width: 80%; }
+    button { background: linear-gradient(135deg, #ff416c, #ff4b2b); color: #fff; cursor: pointer; }
+    button:hover { transform: scale(1.05); }
   </style>
 </head>
 <body>
-  <div class="container" id="gameContainer">
-    <div class="logo">
-      <img src="images/logo.png" alt="Logo">
+  <div class="container">
+    <h1>🤖 AI 단어 설명 게임</h1>
+    <div id="gameArea">
+      <div id="hint">힌트가 여기에 표시됩니다</div>
+      <input type="text" id="guessInput" placeholder="정답을 입력하세요" onkeydown="if(event.key==='Enter') checkAnswer()">
+      <button onclick="checkAnswer()">제출</button>
+      <div id="scoreBoard">점수: 0점</div>
+      <div id="result"></div>
     </div>
-    <h1>AI 단어 설명 게임</h1>
-    <div id="userInfo"></div>
-    <div class="status">
-      <div>남은 시간: <span id="timer">180</span>초</div>
-      <div>점수: <span id="score">0</span>점</div>
-      <div>남은 시도: <span id="attempts">3</span></div>
-    </div>
-    <div id="hint">힌트가 여기에 표시됩니다</div>
-    <input type="text" id="guessInput" placeholder="정답을 입력하세요" onkeydown="handleKey(event)" />
-    <button onclick="checkAnswer()">제출</button>
-    <div id="timeBarContainer"><div id="timeBar"></div></div>
-    <div id="result"></div>
-    <div style="margin-top:20px;">
-      <button onclick="restartGame()">다시하기</button>
-      <button onclick="goBack()">메인으로 돌아가기</button>
-    </div>
+    <button onclick="goBack()">메인으로 돌아가기</button>
   </div>
 
   <script>
-    let problems = [
+    const firebaseConfig = {
+      apiKey: "AIzaSyDwk8QF3jJMzk30QeJR_kFTq6gQXGmoiG4",
+      authDomain: "debug-games-hub.firebaseapp.com",
+      projectId: "debug-games-hub",
+      storageBucket: "debug-games-hub.firebasestorage.app",
+      messagingSenderId: "391096300170",
+      appId: "1:391096300170:web:156898c1574c15fca9f373"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const problems = [
       { answer: "의자", hints: ["앉을 수 있음", "네 다리", "책상 옆에 있음"] },
       { answer: "토끼", hints: ["귀가 긺", "풀을 먹음", "깡총깡총"] }
     ];
+    let currentIndex = 0, score = 0;
+    const hintDiv = document.getElementById('hint');
+    const resultDiv = document.getElementById('result');
+    const scoreBoard = document.getElementById('scoreBoard');
+    const guessInput = document.getElementById('guessInput');
 
-    let timeLeft = 180, timer, score = 0, attempts = 3, currentProblem, usedIndices = [], currentHints;
-
-    window.onload = () => {
-      const user = JSON.parse(localStorage.getItem('currentUser'));
-      if (!user) {
-        alert('로그인 정보가 없습니다. 메인으로 이동합니다.');
-        window.location.href = 'index.html';
+    function loadProblem() {
+      if (currentIndex >= problems.length) {
+        saveScore();
+        resultDiv.textContent = `게임 종료! 최종 점수: ${score}점`;
         return;
       }
-      document.getElementById('userInfo').textContent = `플레이어: ${user.name} (${user.id})`;
-      startGame();
-    };
-
-    function startGame() {
-      score = 0;
-      timeLeft = 180;
-      usedIndices = [];
-      nextProblem();
-      timer = setInterval(() => {
-        document.getElementById('timer').textContent = timeLeft;
-        updateTimeBar();
-        timeLeft--;
-        if (timeLeft < 0) {
-          clearInterval(timer);
-          endGame();
-        }
-      }, 1000);
-    }
-
-    function nextProblem() {
-      if (usedIndices.length === problems.length) {
-        endGame();
-        return;
-      }
-      let index;
-      do { index = Math.floor(Math.random() * problems.length); }
-      while (usedIndices.includes(index));
-      usedIndices.push(index);
-      currentProblem = problems[index];
-      currentHints = [...currentProblem.hints];
-      attempts = 3;
-      document.getElementById('attempts').textContent = attempts;
-      document.getElementById('hint').textContent = currentHints[3 - attempts];
-      document.getElementById('guessInput').value = '';
-      document.getElementById('result').textContent = '';
-    }
-
-    function handleKey(event) {
-      if (event.key === "Enter") checkAnswer();
+      hintDiv.textContent = problems[currentIndex].hints.join(', ');
+      guessInput.value = '';
     }
 
     function checkAnswer() {
-      const inputEl = document.getElementById('guessInput');
-      const input = inputEl.value.trim();
-      inputEl.value = '';
+      const input = guessInput.value.trim();
       if (!input) return;
-      if (input === currentProblem.answer) {
-        let point = attempts === 3 ? 25 : attempts === 2 ? 15 : 5;
-        score += point;
-        document.getElementById('score').textContent = score;
-        document.getElementById('result').textContent = `정답! +${point}점`;
-        setTimeout(nextProblem, 1000);
+      if (input === problems[currentIndex].answer) {
+        score += 25;
+        resultDiv.textContent = `정답! +25점`;
       } else {
-        attempts--;
-        if (attempts === 0) {
-          document.getElementById('result').textContent = `오답! 정답은 ${currentProblem.answer}`;
-          setTimeout(nextProblem, 1500);
-        } else {
-          document.getElementById('attempts').textContent = attempts;
-          document.getElementById('hint').textContent = currentHints[3 - attempts];
-        }
+        resultDiv.textContent = `오답!`; 
       }
+      scoreBoard.textContent = `점수: ${score}점`;
+      currentIndex++;
+      setTimeout(loadProblem, 1000);
     }
 
-    function updateTimeBar() {
-      const percent = Math.max((timeLeft / 180) * 100, 0);
-      document.getElementById('timeBar').style.width = percent + '%';
-      document.getElementById('timeBar').style.backgroundColor = percent < 30 ? '#e74c3c' : percent < 60 ? '#f1c40f' : '#4CAF50';
-    }
-
-    function endGame() {
-      clearInterval(timer);
+    function saveScore() {
       const user = JSON.parse(localStorage.getItem('currentUser'));
-      const allRankings = JSON.parse(localStorage.getItem('allGameRankings') || '[]');
-      allRankings.push({ id: user.id, name: user.name, game: 'AI 단어 설명 게임', score });
-      localStorage.setItem('allGameRankings', JSON.stringify(allRankings));
-      alert(`게임 종료! 최종 점수: ${score}점`);
-      window.location.href = 'index.html';
-    }
-
-    function restartGame() {
-      clearInterval(timer);
-      startGame();
+      if (!user) return;
+      const newEntry = {
+        id: user.id,
+        name: user.name,
+        game: 'AI 단어 설명 게임',
+        score: score,
+        time: new Date().toISOString()
+      };
+      const newKey = db.ref().child('rankings').push().key;
+      const updates = {};
+      updates['/rankings/' + newKey] = newEntry;
+      db.ref().update(updates);
     }
 
     function goBack() {
-      window.location.href = 'index.html';
+      window.location.href = '/-Debug-Games-Hub/index.html';
     }
+
+    window.onload = loadProblem;
   </script>
 </body>
 </html>
