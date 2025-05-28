@@ -1,10 +1,10 @@
-<!-- memory_card_game.html: 기억력 카드 게임 -->
+<!-- memory-card-game.html: 기억력 카드 게임 (전체 코드, 절대 경로 수정 버전) -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>디버그 동아리 | 기억력 카드 게임</title>
+  <title>Debug Games Hub | 기억력 카드 게임</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
   <style>
     body {
@@ -22,13 +22,20 @@
       text-align: center;
     }
     header h1 {
-      font-size: 1.8em;
+      font-size: 2rem;
+      margin-bottom: 10px;
+    }
+    header img {
+      width: 60px;
+      height: auto;
       margin-bottom: 10px;
     }
     .info {
       display: flex;
       gap: 20px;
       margin-bottom: 20px;
+      flex-wrap: wrap;
+      justify-content: center;
     }
     .info div {
       background: #fff;
@@ -64,29 +71,179 @@
       color: #fff;
       cursor: default;
     }
-    button {
+    button, a.button-link {
       margin-top: 20px;
       padding: 10px 20px;
       border: none;
       background: #2196f3;
       color: #fff;
-      font-size: 1em;
+      font-size: 1rem;
       border-radius: 10px;
       cursor: pointer;
       transition: background 0.3s;
+      text-decoration: none;
+      display: inline-block;
     }
-    button:hover {
+    button:hover, a.button-link:hover {
       background: #1976d2;
     }
     #message {
       margin-top: 20px;
-      font-size: 1.2em;
+      font-size: 1.2rem;
       font-weight: bold;
     }
   </style>
 </head>
 <body>
-  <!-- 나머지 게임 코드 (이전 제공 코드에서 붙여넣기) -->
-  <!-- 주의: 전체 HTML 코드가 너무 길어 생략, 캔버스에 전체 코드 제공 예정 -->
+  <header>
+    <img src="/-Debug-Games-Hub/A_2D_digital_graphic_logo_for_a_computer_club_name.png" alt="디버그 로고">
+    <h1>기억력 카드 게임</h1>
+    <div class="info">
+      <div>단계: <span id="stage">1</span></div>
+      <div>시도: <span id="attempts">0</span></div>
+      <div>시간: <span id="time">0</span>s</div>
+      <div>점수: <span id="score">0</span></div>
+    </div>
+  </header>
+  <main>
+    <div class="game-board" id="gameBoard"></div>
+    <button id="restartBtn">게임 재시작</button>
+    <a class="button-link" href="/-Debug-Games-Hub/index.html">메인으로 돌아가기</a>
+    <div id="message"></div>
+  </main>
+
+  <script>
+    const stageConfigs = [
+      { rows: 2, cols: 2 }, { rows: 3, cols: 4 }, { rows: 4, cols: 5 },
+      { rows: 4, cols: 6 }, { rows: 5, cols: 6 }, { rows: 5, cols: 8 },
+      { rows: 6, cols: 8 }, { rows: 6, cols: 10 }, { rows: 7, cols: 10 }, { rows: 8, cols: 10 }
+    ];
+
+    let stage = 1;
+    let score = 0;
+    let attempts = 0;
+    let timer;
+    let timeElapsed = 0;
+    let firstCard, secondCard;
+    let lockBoard = false;
+    let matchedPairs = 0;
+
+    const gameBoard = document.getElementById('gameBoard');
+    const stageSpan = document.getElementById('stage');
+    const attemptsSpan = document.getElementById('attempts');
+    const timeSpan = document.getElementById('time');
+    const scoreSpan = document.getElementById('score');
+    const messageDiv = document.getElementById('message');
+    const restartBtn = document.getElementById('restartBtn');
+
+    function createCards(stageConfig) {
+      const totalCards = stageConfig.rows * stageConfig.cols;
+      const symbols = [];
+      for (let i = 0; i < totalCards / 2; i++) {
+        symbols.push(i, i);
+      }
+      symbols.sort(() => Math.random() - 0.5);
+
+      gameBoard.style.gridTemplateColumns = `repeat(${stageConfig.cols}, 1fr)`;
+      gameBoard.innerHTML = '';
+
+      symbols.forEach((symbol) => {
+        const card = document.createElement('div');
+        card.classList.add('card');
+        card.dataset.symbol = symbol;
+        card.textContent = symbol;
+        card.classList.add('flipped');
+        card.addEventListener('click', flipCard);
+        gameBoard.appendChild(card);
+      });
+
+      setTimeout(() => {
+        document.querySelectorAll('.card').forEach(card => card.classList.remove('flipped'));
+      }, 3000);
+    }
+
+    function flipCard() {
+      if (lockBoard || this.classList.contains('flipped') || this.classList.contains('matched')) return;
+      this.classList.add('flipped');
+
+      if (!firstCard) {
+        firstCard = this;
+      } else {
+        secondCard = this;
+        checkForMatch();
+      }
+    }
+
+    function checkForMatch() {
+      lockBoard = true;
+      attempts++;
+      attemptsSpan.textContent = attempts;
+
+      const isMatch = firstCard.dataset.symbol === secondCard.dataset.symbol;
+
+      if (isMatch) {
+        firstCard.classList.add('matched');
+        secondCard.classList.add('matched');
+        matchedPairs++;
+        if (matchedPairs === (gameBoard.children.length / 2)) {
+          clearInterval(timer);
+          score += stage * 100;
+          scoreSpan.textContent = score;
+          if (stage === 10) {
+            messageDiv.textContent = `🎉 축하합니다! 총 점수: ${score}점`;
+            saveRanking(score);
+          } else {
+            stage++;
+            setTimeout(startStage, 1000);
+          }
+        }
+        resetBoard();
+      } else {
+        setTimeout(() => {
+          firstCard.classList.remove('flipped');
+          secondCard.classList.remove('flipped');
+          resetBoard();
+        }, 1000);
+      }
+    }
+
+    function resetBoard() {
+      [firstCard, secondCard] = [null, null];
+      lockBoard = false;
+    }
+
+    function startStage() {
+      stageSpan.textContent = stage;
+      attempts = 0;
+      timeElapsed = 0;
+      matchedPairs = 0;
+      attemptsSpan.textContent = attempts;
+      timeSpan.textContent = timeElapsed;
+      clearInterval(timer);
+      timer = setInterval(() => {
+        timeElapsed++;
+        timeSpan.textContent = timeElapsed;
+      }, 1000);
+      createCards(stageConfigs[stage - 1]);
+      messageDiv.textContent = '';
+    }
+
+    function saveRanking(finalScore) {
+      const rankings = JSON.parse(localStorage.getItem('memoryGameRankings')) || [];
+      rankings.push(finalScore);
+      rankings.sort((a, b) => b - a);
+      if (rankings.length > 5) rankings.length = 5;
+      localStorage.setItem('memoryGameRankings', JSON.stringify(rankings));
+    }
+
+    restartBtn.addEventListener('click', () => {
+      stage = 1;
+      score = 0;
+      scoreSpan.textContent = score;
+      startStage();
+    });
+
+    startStage();
+  </script>
 </body>
 </html>
