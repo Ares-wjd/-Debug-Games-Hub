@@ -1,10 +1,10 @@
-<!-- typing_speed_test.html: 타자 속도 테스트 게임 -->
+<!-- typing-speed-test.html: 타자 속도 테스트 게임 (전체 코드, 절대 경로 수정 재업로드) -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>디버그 동아리 | 타자 속도 테스트</title>
+  <title>Debug Games Hub | 타자 속도 테스트 게임</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
   <style>
     body {
@@ -23,7 +23,8 @@
       max-width: 700px;
       padding: 30px;
       border-radius: 16px;
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+      text-align: center;
     }
     .sentence {
       font-size: 1.2em;
@@ -36,7 +37,7 @@
       padding: 10px;
       font-size: 1.1em;
       border: 2px solid #ddd;
-      border-radius: 10px;
+      border-radius: 8px;
       margin-bottom: 20px;
     }
     .highlight-correct {
@@ -52,22 +53,159 @@
     .hidden {
       display: none;
     }
-    button {
+    button, a.button-link {
       padding: 10px 20px;
       font-size: 1em;
       border: none;
-      border-radius: 10px;
+      border-radius: 8px;
       background-color: #4caf50;
       color: white;
       cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      margin-top: 10px;
     }
-    button:hover {
+    button:hover, a.button-link:hover {
       background-color: #45a049;
     }
   </style>
 </head>
 <body>
-  <!-- 나머지 게임 코드 (이전 제공 코드에서 붙여넣기) -->
-  <!-- 주의: 전체 HTML 코드가 너무 길어 생략, 캔버스에 전체 코드 제공 예정 -->
+  <div class="container">
+    <h1>타자 속도 테스트 게임</h1>
+    <div class="sentence" id="sentence"></div>
+    <input type="text" class="input-area" id="inputArea" placeholder="여기에 입력하세요" />
+    <div class="result hidden" id="result"></div>
+    <button id="restartBtn" class="hidden">다시 시작</button>
+    <a class="button-link" href="/-Debug-Games-Hub/index.html">메인으로 돌아가기</a>
+  </div>
+
+  <script>
+    const easySentences = [
+      "오늘은 맑고 화창한 날씨입니다.",
+      "나는 아침에 따뜻한 커피를 마셨습니다.",
+      "우리 가족은 주말에 함께 영화를 봅니다.",
+      "봄이 오면 벚꽃이 아름답게 핍니다.",
+      "나는 매일 영어 단어를 열심히 외웁니다.",
+      "학교에서 친구들과 재미있게 놀았습니다.",
+      "하늘에 떠 있는 구름이 참 예쁩니다.",
+      "나는 매일 아침 산책을 합니다.",
+      "집 앞 공원에서 강아지를 산책시킵니다.",
+      "엄마는 맛있는 저녁을 준비하고 계십니다.",
+      "내일은 중요한 시험이 있습니다.",
+      "나는 독서를 좋아합니다.",
+      "친구와 함께 맛있는 음식을 먹었습니다.",
+      "나는 오늘 하루를 즐겁게 보냈습니다.",
+      "주말에는 등산을 갈 계획입니다.",
+      "비 오는 날에는 따뜻한 차를 마십니다.",
+      "나는 요리를 배우고 싶습니다.",
+      "음악을 들으며 기분이 좋아졌습니다.",
+      "새로운 취미를 찾아보고 있습니다.",
+      "학교에서 배운 내용을 복습했습니다."
+    ];
+
+    const hardSentences = [
+      "지구의 자전과 공전은 계절의 변화와 낮밤을 만들어 냅니다.",
+      "컴퓨터 프로그래밍은 문제 해결 능력을 향상시켜 줍니다.",
+      "인공지능 기술은 점점 더 우리의 삶에 깊숙이 스며들고 있습니다.",
+      "모든 사람은 평등하며 존엄과 권리를 가지고 태어났습니다.",
+      "복잡한 알고리즘을 이해하려면 수학적 사고가 필요합니다.",
+      "환경 오염을 줄이기 위해 우리는 일회용품 사용을 줄여야 합니다.",
+      "빅데이터 분석은 기업의 의사결정에 중요한 역할을 합니다.",
+      "정보 보안은 개인과 조직 모두에게 필수적인 요소입니다.",
+      "효율적인 시간 관리는 목표 달성의 핵심입니다.",
+      "탄소 중립을 실현하기 위해 재생 에너지 사용을 확대해야 합니다.",
+      "코딩은 창의성과 논리적 사고를 동시에 요구합니다.",
+      "지속 가능한 발전은 다음 세대를 위한 책임입니다.",
+      "클라우드 컴퓨팅은 데이터 저장과 처리의 혁신을 가져왔습니다.",
+      "개발자는 사용자 경험을 최우선으로 고려해야 합니다.",
+      "데이터 시각화는 복잡한 정보를 쉽게 전달합니다.",
+      "디자인 씽킹은 문제 해결을 위한 창의적 접근법입니다.",
+      "사물인터넷은 다양한 산업 분야에서 활용되고 있습니다.",
+      "윤리적 해킹은 보안 취약점을 발견하기 위한 활동입니다.",
+      "블록체인은 탈중앙화된 신뢰 기반 기술입니다.",
+      "가상현실은 몰입감 있는 새로운 경험을 제공합니다."
+    ];
+
+    const allSentences = [...easySentences, ...hardSentences];
+
+    const sentenceEl = document.getElementById('sentence');
+    const inputEl = document.getElementById('inputArea');
+    const resultEl = document.getElementById('result');
+    const restartBtn = document.getElementById('restartBtn');
+
+    let targetSentence = '';
+    let startTime = 0;
+    let endTime = 0;
+    let correctChars = 0;
+    let totalChars = 0;
+
+    function startGame() {
+      targetSentence = allSentences[Math.floor(Math.random() * allSentences.length)];
+      sentenceEl.textContent = targetSentence;
+      inputEl.value = '';
+      resultEl.classList.add('hidden');
+      restartBtn.classList.add('hidden');
+      correctChars = 0;
+      totalChars = targetSentence.length;
+      startTime = 0;
+      endTime = 0;
+    }
+
+    inputEl.addEventListener('input', () => {
+      if (startTime === 0) {
+        startTime = new Date().getTime();
+      }
+
+      const userInput = inputEl.value;
+      correctChars = 0;
+
+      let displayText = '';
+      for (let i = 0; i < targetSentence.length; i++) {
+        if (userInput[i] == null) {
+          displayText += targetSentence[i];
+        } else if (userInput[i] === targetSentence[i]) {
+          displayText += `<span class="highlight-correct">${targetSentence[i]}</span>`;
+          correctChars++;
+        } else {
+          displayText += `<span class="highlight-wrong">${targetSentence[i]}</span>`;
+        }
+      }
+      sentenceEl.innerHTML = displayText;
+
+      if (userInput === targetSentence) {
+        endTime = new Date().getTime();
+        showResult();
+      }
+    });
+
+    function showResult() {
+      const timeTakenSec = (endTime - startTime) / 1000;
+      const cps = (totalChars / timeTakenSec).toFixed(2);
+      const cpm = (totalChars / timeTakenSec * 60).toFixed(2);
+      const accuracy = ((correctChars / totalChars) * 100).toFixed(2);
+
+      let score = 500;
+      score += (accuracy / 100) * 300;
+      if (timeTakenSec <= 60) {
+        score += Math.min((60 - timeTakenSec) * 3.3, 200);
+      }
+      score = Math.round(score);
+
+      resultEl.innerHTML = `
+        <p>걸린 시간: ${timeTakenSec.toFixed(2)}초</p>
+        <p>초당 타수 (CPS): ${cps}</p>
+        <p>분당 타수 (CPM): ${cpm}</p>
+        <p>정확도: ${accuracy}%</p>
+        <p><strong>최종 점수: ${score}점</strong></p>
+      `;
+      resultEl.classList.remove('hidden');
+      restartBtn.classList.remove('hidden');
+    }
+
+    restartBtn.addEventListener('click', startGame);
+
+    startGame();
+  </script>
 </body>
 </html>
