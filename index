@@ -1,0 +1,79 @@
+<!-- index.html: 디버그 동아리 메인 페이지 -->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>디버그 동아리 게임 모음</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #ece9e6, #ffffff);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    header img {
+      width: 100px;
+      margin-bottom: 10px;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 2em;
+    }
+    .button-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      justify-content: center;
+    }
+    .button {
+      background-color: #4a90e2;
+      color: white;
+      padding: 15px 25px;
+      border: none;
+      border-radius: 10px;
+      font-size: 1em;
+      cursor: pointer;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      transition: background-color 0.3s, transform 0.2s;
+    }
+    .button:hover {
+      background-color: #357ab8;
+      transform: translateY(-3px);
+    }
+    footer {
+      margin-top: 40px;
+      font-size: 0.9em;
+      color: #777;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <img src="A_2D_digital_graphic_logo_for_a_computer_club_name.png" alt="디버그 로고">
+    <h1>디버그 동아리 게임 모음</h1>
+    <p>다양한 게임과 퀴즈를 즐겨보세요!</p>
+  </header>
+
+  <div class="button-container">
+    <button class="button" onclick="location.href='ai_word_game.html'">AI 단어 설명 게임</button>
+    <button class="button" onclick="location.href='memory_card_game.html'">기억력 카드 게임</button>
+    <button class="button" onclick="location.href='programming_quiz.html'">프로그래밍 퀴즈 게임</button>
+    <button class="button" onclick="location.href='typing_speed_test.html'">타자 속도 테스트 게임</button>
+  </div>
+
+  <footer>
+    &copy; 2025 디버그 컴퓨터 동아리. 모든 권리 보유.
+  </footer>
+</body>
+</html>
