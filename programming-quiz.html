@@ -1,201 +1,100 @@
-<!-- programming-quiz.html: 프로그래밍 퀴즈 게임 (전체 코드, 절대 경로 수정 재업로드) -->
+<!-- programming-quiz.html: Firebase 연동 버전 -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Debug Games Hub | 프로그래밍 퀴즈 게임</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <title>디버그 동아리 | 프로그래밍 퀴즈 게임</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
   <style>
-    body {
-      font-family: 'Poppins', sans-serif;
-      background: linear-gradient(135deg, #f0f4f8, #d9e2ec);
-      margin: 0;
-      padding: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-    }
-    .container {
-      background: #fff;
-      width: 90%;
-      max-width: 600px;
-      padding: 20px;
-      border-radius: 16px;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-      text-align: center;
-    }
-    .status-bar {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 20px;
-      font-size: 14px;
-    }
-    .question-box {
-      background: #f9fafb;
-      padding: 15px;
-      border-radius: 12px;
-      margin-bottom: 20px;
-      text-align: left;
-    }
-    .options button {
-      display: block;
-      width: 100%;
-      margin: 8px 0;
-      padding: 10px;
-      border: none;
-      border-radius: 8px;
-      background: #dbeafe;
-      cursor: pointer;
-      transition: background 0.3s;
-    }
-    .options button:hover {
-      background: #bfdbfe;
-    }
-    .feedback {
-      font-size: 18px;
-      margin-top: 10px;
-    }
-    .hidden { display: none; }
-    .result-screen {
-      font-size: 18px;
-    }
-    .restart-btn, a.button-link {
-      margin-top: 20px;
-      padding: 10px 20px;
-      font-size: 16px;
-      border: none;
-      border-radius: 8px;
-      background: #4ade80;
-      color: white;
-      cursor: pointer;
-      text-decoration: none;
-      display: inline-block;
-    }
-    .restart-btn:hover, a.button-link:hover {
-      background: #22c55e;
-    }
+    body { font-family: 'Poppins', sans-serif; background: linear-gradient(135deg, #0f2027, #203a43, #2c5364); margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; color: #fff; }
+    .container { background: rgba(255, 255, 255, 0.07); backdrop-filter: blur(15px); width: 90%; max-width: 700px; padding: 30px; border-radius: 16px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); text-align: center; }
+    button { padding: 12px; margin: 10px; font-size: 1em; border-radius: 8px; border: none; background: linear-gradient(135deg, #ff416c, #ff4b2b); color: #fff; cursor: pointer; }
+    button:hover { transform: scale(1.05); }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="status-bar">
-      <div>라운드: <span id="round">1</span></div>
-      <div>언어: <span id="language">Python</span></div>
-      <div>점수: <span id="score">0</span></div>
-      <div>남은 시간: <span id="timer">30</span>s</div>
-    </div>
-    <div class="question-box" id="question-box"></div>
-    <div class="options" id="options"></div>
-    <div class="feedback hidden" id="feedback"></div>
-    <div class="result-screen hidden" id="result-screen">
-      <h2>게임 종료!</h2>
-      <p>최종 점수: <span id="final-score"></span></p>
-      <p>마지막 라운드: <span id="final-round"></span></p>
-      <p>맞힌 문제 수: <span id="final-questions"></span></p>
-      <button class="restart-btn" onclick="restartGame()">게임 재시작</button>
-      <a class="button-link" href="/-Debug-Games-Hub/index.html">메인으로 돌아가기</a>
-    </div>
+    <h1>💻 프로그래밍 퀴즈 게임</h1>
+    <div id="questionBox"></div>
+    <div id="options"></div>
+    <div id="scoreBoard">점수: 0</div>
+    <button onclick="goBack()">메인으로 돌아가기</button>
   </div>
 
   <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDwk8QF3jJMzk30QeJR_kFTq6gQXGmoiG4",
+      authDomain: "debug-games-hub.firebaseapp.com",
+      projectId: "debug-games-hub",
+      storageBucket: "debug-games-hub.firebasestorage.app",
+      messagingSenderId: "391096300170",
+      appId: "1:391096300170:web:156898c1574c15fca9f373"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
     const questions = [
-      { round: 1, language: 'Python', question: 'Python에서 리스트의 길이를 구하는 함수는?', code: 'my_list = [1, 2, 3]\nprint(____(my_list))', options: ['size()', 'length()', 'len()', 'count()'], answer: 2 },
-      { round: 1, language: 'Python', question: 'Python에서 문자열을 소문자로 변환하는 메서드는?', code: 'text = "HELLO"\nprint(text.____())', options: ['lower()', 'down()', 'small()', 'minify()'], answer: 0 },
-      { round: 1, language: 'Python', question: 'Python에서 반복문을 만들 때 사용하는 키워드는?', code: 'for i in range(5):\n    print(i)', options: ['repeat', 'for', 'loop', 'whilefor'], answer: 1 },
-      { round: 2, language: 'Python', question: 'Python에서 예외 처리를 위해 사용하는 키워드는?', code: 'try:\n    x = 1 / 0\nexcept ZeroDivisionError:\n    print("에러")', options: ['except', 'catch', 'error', 'fail'], answer: 0 },
-      { round: 2, language: 'JavaScript', question: 'JavaScript에서 배열의 길이를 구하는 속성은?', code: 'const arr = [1, 2, 3];\nconsole.log(arr.___);', options: ['size', 'length', 'count', 'number'], answer: 1 },
-      { round: 3, language: 'JavaScript', question: 'JavaScript에서 화살표 함수는 어떤 모양인가?', code: 'const add = (a, b) => a + b;', options: ['function(a, b)', '(a, b) =>', 'def(a, b):', 'lambda a, b:'], answer: 1 }
+      { q: 'Python에서 리스트 길이를 구하는 함수?', a: ['size()', 'length()', 'len()', 'count()'], correct: 2 },
+      { q: 'JavaScript에서 배열 길이를 구하는 속성?', a: ['size', 'length', 'count', 'number'], correct: 1 },
+      { q: 'Python에서 예외 처리를 위해 사용하는 키워드?', a: ['except', 'catch', 'error', 'fail'], correct: 0 }
     ];
 
-    let currentQuestion = 0;
-    let score = 0;
-    let timer;
-    let timeLeft = 30;
-    let correctCount = 0;
+    let current = 0, score = 0;
+    const qBox = document.getElementById('questionBox');
+    const optionsDiv = document.getElementById('options');
+    const scoreBoard = document.getElementById('scoreBoard');
 
-    function startGame() {
-      showQuestion();
-      startTimer();
-    }
-
-    function showQuestion() {
-      const q = questions[currentQuestion];
-      document.getElementById('round').innerText = q.round;
-      document.getElementById('language').innerText = q.language;
-      document.getElementById('score').innerText = score;
-      document.getElementById('question-box').innerHTML = `<strong>Q: ${q.question}</strong><pre>${q.code}</pre>`;
-      const optionsDiv = document.getElementById('options');
+    function loadQuestion() {
+      if (current >= questions.length) {
+        saveScore();
+        qBox.textContent = `게임 종료! 최종 점수: ${score}`;
+        optionsDiv.innerHTML = '';
+        return;
+      }
+      const q = questions[current];
+      qBox.textContent = q.q;
       optionsDiv.innerHTML = '';
-      q.options.forEach((opt, index) => {
+      q.a.forEach((opt, idx) => {
         const btn = document.createElement('button');
-        btn.innerText = opt;
-        btn.onclick = () => checkAnswer(index);
+        btn.textContent = opt;
+        btn.onclick = () => checkAnswer(idx);
         optionsDiv.appendChild(btn);
       });
     }
 
-    function startTimer() {
-      timeLeft = 30;
-      document.getElementById('timer').innerText = timeLeft;
-      clearInterval(timer);
-      timer = setInterval(() => {
-        timeLeft--;
-        document.getElementById('timer').innerText = timeLeft;
-        if (timeLeft <= 0) {
-          clearInterval(timer);
-          endGame();
-        }
-      }, 1000);
-    }
-
-    function checkAnswer(selected) {
-      const q = questions[currentQuestion];
-      const feedback = document.getElementById('feedback');
-      feedback.classList.remove('hidden');
-      if (selected === q.answer) {
-        feedback.innerText = '✅ 정답!';
-        correctCount++;
-        score += q.round === 1 ? 100 : q.round === 2 ? 200 : 300;
-        currentQuestion++;
-        if (currentQuestion < questions.length) {
-          showQuestion();
-          startTimer();
-        } else {
-          endGame();
-        }
-      } else {
-        feedback.innerText = '❌ 오답! 게임 종료.';
-        endGame();
+    function checkAnswer(idx) {
+      if (idx === questions[current].correct) {
+        score += 10;
+        scoreBoard.textContent = `점수: ${score}`;
       }
+      current++;
+      loadQuestion();
     }
 
-    function endGame() {
-      clearInterval(timer);
-      document.querySelector('.question-box').classList.add('hidden');
-      document.querySelector('.options').classList.add('hidden');
-      document.querySelector('.status-bar').classList.add('hidden');
-      document.getElementById('feedback').classList.add('hidden');
-      const resultScreen = document.getElementById('result-screen');
-      resultScreen.classList.remove('hidden');
-      document.getElementById('final-score').innerText = score;
-      document.getElementById('final-round').innerText = questions[currentQuestion]?.round || questions[questions.length - 1].round;
-      document.getElementById('final-questions').innerText = correctCount;
+    function saveScore() {
+      const user = JSON.parse(localStorage.getItem('currentUser'));
+      if (!user) return;
+      const newEntry = {
+        id: user.id,
+        name: user.name,
+        game: '프로그래밍 퀴즈 게임',
+        score: score,
+        time: new Date().toISOString()
+      };
+      const newKey = db.ref().child('rankings').push().key;
+      const updates = {};
+      updates['/rankings/' + newKey] = newEntry;
+      db.ref().update(updates);
+      alert(`최종 점수: ${score}`);
     }
 
-    function restartGame() {
-      currentQuestion = 0;
-      score = 0;
-      correctCount = 0;
-      document.querySelector('.question-box').classList.remove('hidden');
-      document.querySelector('.options').classList.remove('hidden');
-      document.querySelector('.status-bar').classList.remove('hidden');
-      document.getElementById('result-screen').classList.add('hidden');
-      startGame();
+    function goBack() {
+      window.location.href = '/-Debug-Games-Hub/index.html';
     }
 
-    window.onload = startGame;
+    window.onload = loadQuestion;
   </script>
 </body>
 </html>
