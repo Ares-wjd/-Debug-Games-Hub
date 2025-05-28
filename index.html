@@ -1,4 +1,4 @@
-<!-- index.html: 메인 화면 (미래형 모던 디자인 + 본인 정보 + 전체 합산 점수 + 게임별 점수 표시) -->
+<!-- index.html: 메인 화면 (게임별 최고점 합산 랭킹 + 게임별 개별 랭킹 표시) -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -128,11 +128,13 @@
       <button onclick="goToGame('memory-card-game.html')">🧠 기억력 카드 게임</button>
       <button onclick="goToGame('programming-quiz.html')">💻 프로그래밍 퀴즈 게임</button>
       <button onclick="goToGame('typing-speed-test.html')">⌨️ 타자 속도 테스트 게임</button>
-      <button onclick="showRanking()">🏆 랭킹 보기</button>
+      <button onclick="showRanking()">🏆 전체 및 게임별 랭킹 보기</button>
       <button onclick="logout()" style="background: linear-gradient(135deg, #43cea2, #185a9d); margin-top:20px;">🚪 로그아웃</button>
       <div id="rankingSection" class="hidden">
-        <h3>상위 5명 랭킹</h3>
-        <div class="ranking-list" id="rankingList"></div>
+        <h3>전체 합산 랭킹 (게임별 최고점 합산)</h3>
+        <div class="ranking-list" id="totalRanking"></div>
+        <h3>게임별 랭킹</h3>
+        <div class="ranking-list" id="gameRankings"></div>
       </div>
     </div>
   </div>
@@ -163,15 +165,21 @@
         document.getElementById('userInfo').textContent = `환영합니다, ${currentUser.name} (${currentUser.id})님!`;
 
         const allRankings = JSON.parse(localStorage.getItem('allGameRankings') || '[]');
-        const userEntries = allRankings.filter(e => e.id === currentUser.id);
+        const userGames = allRankings.filter(e => e.id === currentUser.id);
 
-        if (userEntries.length > 0) {
+        if (userGames.length > 0) {
           let totalScore = 0;
           let details = '';
-          userEntries.forEach(entry => {
-            totalScore += entry.score;
-            details += `• ${entry.game}: ${entry.score}점\n`;
+          const bestScores = {};
+          userGames.forEach(entry => {
+            if (!bestScores[entry.game] || bestScores[entry.game] < entry.score) {
+              bestScores[entry.game] = entry.score;
+            }
           });
+          for (const [game, score] of Object.entries(bestScores)) {
+            totalScore += score;
+            details += `• ${game}: ${score}점\n`;
+          }
           document.getElementById('userScore').innerHTML = `내 전체 합산 점수: ${totalScore}점<br>${details.replace(/\n/g, '<br>')}`;
         } else {
           document.getElementById('userScore').innerHTML = `내 전체 합산 점수: 기록 없음`;
@@ -179,23 +187,54 @@
       }
     }
 
-    function goToGame(page) {
-      window.location.href = `/-Debug-Games-Hub/${page}`;
-    }
-
     function showRanking() {
       const rankingSection = document.getElementById('rankingSection');
-      const rankingList = document.getElementById('rankingList');
-      rankingList.innerHTML = '';
+      const totalRanking = document.getElementById('totalRanking');
+      const gameRankings = document.getElementById('gameRankings');
+      totalRanking.innerHTML = '';
+      gameRankings.innerHTML = '';
 
       const allRankings = JSON.parse(localStorage.getItem('allGameRankings') || '[]');
       if (allRankings.length === 0) {
-        rankingList.innerHTML = '<div>랭킹 데이터가 없습니다.</div>';
-      } else {
-        allRankings.slice(0, 5).forEach((entry, index) => {
-          rankingList.innerHTML += `<div>${index + 1}위 - ${entry.name} (${entry.id}) : ${entry.score}점 (${entry.game})</div>`;
-        });
+        totalRanking.innerHTML = '<div>랭킹 데이터가 없습니다.</div>';
+        gameRankings.innerHTML = '<div>랭킹 데이터가 없습니다.</div>';
+        return;
       }
+
+      // 전체 합산 랭킹
+      const userScores = {};
+      allRankings.forEach(entry => {
+        if (!userScores[entry.id]) userScores[entry.id] = { name: entry.name, scores: {}, total: 0 };
+        if (!userScores[entry.id].scores[entry.game] || userScores[entry.id].scores[entry.game] < entry.score) {
+          userScores[entry.id].scores[entry.game] = entry.score;
+        }
+      });
+      for (const user of Object.values(userScores)) {
+        user.total = Object.values(user.scores).reduce((a, b) => a + b, 0);
+      }
+      const sortedTotal = Object.entries(userScores).sort((a, b) => b[1].total - a[1].total);
+      sortedTotal.slice(0, 5).forEach(([id, data], index) => {
+        totalRanking.innerHTML += `<div>${index + 1}위 - ${data.name} (${id}): ${data.total}점</div>`;
+      });
+
+      // 게임별 랭킹
+      const games = [...new Set(allRankings.map(e => e.game))];
+      games.forEach(game => {
+        gameRankings.innerHTML += `<strong>${game}</strong><br>`;
+        const gameEntries = allRankings.filter(e => e.game === game);
+        const topPlayers = {};
+        gameEntries.forEach(entry => {
+          if (!topPlayers[entry.id] || topPlayers[entry.id].score < entry.score) {
+            topPlayers[entry.id] = { name: entry.name, score: entry.score };
+          }
+        });
+        const sortedGame = Object.entries(topPlayers).sort((a, b) => b[1].score - a[1].score);
+        sortedGame.slice(0, 5).forEach(([id, data], idx) => {
+          gameRankings.innerHTML += `${idx + 1}위 - ${data.name} (${id}): ${data.score}점<br>`;
+        });
+        gameRankings.innerHTML += '<br>';
+      });
+
       rankingSection.classList.toggle('hidden');
     }
 
