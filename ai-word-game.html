@@ -1,4 +1,4 @@
-<!-- ai-word-game.html: 1번 게임 (AI 단어 설명 게임) 최신 버전 -->
+<!-- ai-word-game.html: 1번 게임 (AI 단어 설명 게임) 최신 버전 - 입력창 초기화 추가 -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -107,7 +107,9 @@
     }
 
     function checkAnswer() {
-      const input = document.getElementById('guessInput').value.trim();
+      const inputEl = document.getElementById('guessInput');
+      const input = inputEl.value.trim();
+      inputEl.value = '';
       if (!input) return;
       if (input === currentProblem.answer) {
         let point = attempts === 3 ? 25 : attempts === 2 ? 15 : 5;
