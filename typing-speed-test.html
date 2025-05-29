@@ -1,4 +1,4 @@
-<!-- typing-speed-test.html: 타자 속도 테스트 게임 (localStorage + 개선된 입력, 색상, 타수 표시) -->
+<!-- typing-speed-test.html: 타자 속도 테스트 게임 (입력 시 타이머 시작 및 타수 측정) -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -21,14 +21,23 @@
 </head>
 <body>
   <div class="container">
-    <h1>⌨️ 타자 속도 테스트 게임</h1>
-    <p id="highlightedSentence"></p>
-    <input type="text" id="inputArea" placeholder="여기에 입력하세요" oninput="updateHighlight()" onkeydown="if(event.key==='Enter') checkInput()">
-    <button onclick="checkInput()">제출</button>
-    <p id="score">점수: 0</p>
-    <p id="cpm">현재 CPM: 0</p>
-    <p id="timer">남은 시간: 60초</p>
-    <p id="result"></p>
+    <div id="startArea">
+      <h1>⌨️ 타자 속도 테스트 게임</h1>
+      <p>게임 설명: 주어진 문장을 최대한 빨리 정확히 입력하세요. 60초 제한 시간 안에 최대 점수를 획득하세요!</p>
+      <button onclick="prepareGame()">게임 시작</button>
+      <button onclick="goToMain()">메인으로 돌아가기</button>
+    </div>
+
+    <div id="gameArea" style="display:none;">
+      <p id="highlightedSentence"></p>
+      <input type="text" id="inputArea" placeholder="여기에 입력하세요" oninput="handleInput()" onkeydown="if(event.key==='Enter') checkInput()">
+      <button onclick="checkInput()">제출</button>
+      <p id="score">점수: 0</p>
+      <p id="cpm">현재 CPM: 0</p>
+      <p id="timer">남은 시간: 60초</p>
+      <p id="result"></p>
+    </div>
+
     <div id="endArea" style="display:none;">
       <h2>🎉 게임 종료</h2>
       <p id="finalScore"></p>
@@ -48,10 +57,19 @@
     let score = 0;
     let timeLeft = 60;
     let timer;
+    let timerStarted = false;
     let currentSentence = '';
+    let totalTypedChars = 0;
 
-    function startGame() {
+    function prepareGame() {
+      document.getElementById('startArea').style.display = 'none';
+      document.getElementById('gameArea').style.display = 'block';
       nextSentence();
+    }
+
+    function startTimer() {
+      if (timerStarted) return;
+      timerStarted = true;
       timer = setInterval(() => {
         timeLeft--;
         document.getElementById('timer').textContent = `남은 시간: ${timeLeft}초`;
@@ -61,10 +79,15 @@
 
     function nextSentence() {
       currentSentence = sentences[Math.floor(Math.random() * sentences.length)];
-      updateHighlight();
       document.getElementById('inputArea').value = '';
+      updateHighlight();
       document.getElementById('result').textContent = '';
       updateCPM();
+    }
+
+    function handleInput() {
+      if (!timerStarted) startTimer();
+      updateHighlight();
     }
 
     function updateHighlight() {
@@ -82,7 +105,7 @@
     }
 
     function updateCPM() {
-      const charsTyped = document.getElementById('inputArea').value.length;
+      const charsTyped = totalTypedChars + document.getElementById('inputArea').value.length;
       const secondsElapsed = 60 - timeLeft;
       const cpm = secondsElapsed > 0 ? Math.round((charsTyped / secondsElapsed) * 60) : 0;
       document.getElementById('cpm').textContent = `현재 CPM: ${cpm}`;
@@ -90,6 +113,7 @@
 
     function checkInput() {
       const input = document.getElementById('inputArea').value.trim();
+      totalTypedChars += input.length;
       if (input === currentSentence) {
         score += 100;
         document.getElementById('result').textContent = '✅ 정답!';
@@ -102,7 +126,9 @@
 
     function endGame() {
       clearInterval(timer);
-      document.querySelector('.container').innerHTML = `<h2>🎉 게임 종료</h2><p>최종 점수: ${score}점</p><button onclick='restartGame()'>다시 시작</button><button onclick='goToMain()'>메인으로 돌아가기</button>`;
+      document.getElementById('gameArea').style.display = 'none';
+      document.getElementById('endArea').style.display = 'block';
+      document.getElementById('finalScore').textContent = `최종 점수: ${score}점`;
       saveScoreLocal('타자 속도 테스트 게임', score);
     }
 
@@ -124,8 +150,6 @@
       localStorage.setItem('allGameRankings', JSON.stringify(allData));
       console.log('점수 localStorage에 저장 완료');
     }
-
-    window.onload = startGame;
   </script>
 </body>
 </html>
