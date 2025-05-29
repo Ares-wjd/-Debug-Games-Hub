@@ -1,4 +1,4 @@
-<!-- typing-speed-test.html: 타자 속도 테스트 게임 (localStorage 기반 점수 저장) -->
+<!-- typing-speed-test.html: 타자 속도 테스트 게임 (localStorage + 개선된 입력, 색상, 타수 표시) -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -7,22 +7,26 @@
   <title>타자 속도 테스트 게임</title>
   <style>
     body { font-family: sans-serif; background: linear-gradient(135deg, #373b44, #4286f4); color: #fff; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-    .container { background: rgba(0,0,0,0.6); padding: 30px; border-radius: 16px; width: 90%; max-width: 600px; text-align: center; }
+    .container { background: rgba(0,0,0,0.6); padding: 30px; border-radius: 16px; width: 90%; max-width: 700px; text-align: center; }
     h1 { margin-bottom: 20px; }
     input, button { padding: 10px; margin: 10px 0; border: none; border-radius: 8px; width: 100%; font-size: 1em; }
     input { color: #333; }
     button { background: #4caf50; color: #fff; cursor: pointer; }
     button:hover { background: #43a047; }
-    #result { font-size: 1.2em; margin-top: 10px; }
+    #result, #cpm { font-size: 1.2em; margin-top: 10px; }
+    #highlightedSentence span.correct { color: #4caf50; }
+    #highlightedSentence span.wrong { color: #f44336; }
+    #highlightedSentence span.pending { color: #fff; }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>⌨️ 타자 속도 테스트 게임</h1>
-    <p id="sentence">문장이 여기에 표시됩니다.</p>
-    <input type="text" id="inputArea" placeholder="여기에 입력하세요">
+    <p id="highlightedSentence"></p>
+    <input type="text" id="inputArea" placeholder="여기에 입력하세요" oninput="updateHighlight()" onkeydown="if(event.key==='Enter') checkInput()">
     <button onclick="checkInput()">제출</button>
     <p id="score">점수: 0</p>
+    <p id="cpm">현재 CPM: 0</p>
     <p id="timer">남은 시간: 60초</p>
     <p id="result"></p>
     <div id="endArea" style="display:none;">
@@ -44,6 +48,7 @@
     let score = 0;
     let timeLeft = 60;
     let timer;
+    let currentSentence = '';
 
     function startGame() {
       nextSentence();
@@ -55,16 +60,37 @@
     }
 
     function nextSentence() {
-      const randomIndex = Math.floor(Math.random() * sentences.length);
-      document.getElementById('sentence').textContent = sentences[randomIndex];
+      currentSentence = sentences[Math.floor(Math.random() * sentences.length)];
+      updateHighlight();
       document.getElementById('inputArea').value = '';
       document.getElementById('result').textContent = '';
+      updateCPM();
+    }
+
+    function updateHighlight() {
+      const input = document.getElementById('inputArea').value;
+      let highlighted = '';
+      for (let i = 0; i < currentSentence.length; i++) {
+        if (i < input.length) {
+          highlighted += input[i] === currentSentence[i] ? `<span class='correct'>${currentSentence[i]}</span>` : `<span class='wrong'>${currentSentence[i]}</span>`;
+        } else {
+          highlighted += `<span class='pending'>${currentSentence[i]}</span>`;
+        }
+      }
+      document.getElementById('highlightedSentence').innerHTML = highlighted;
+      updateCPM();
+    }
+
+    function updateCPM() {
+      const charsTyped = document.getElementById('inputArea').value.length;
+      const secondsElapsed = 60 - timeLeft;
+      const cpm = secondsElapsed > 0 ? Math.round((charsTyped / secondsElapsed) * 60) : 0;
+      document.getElementById('cpm').textContent = `현재 CPM: ${cpm}`;
     }
 
     function checkInput() {
       const input = document.getElementById('inputArea').value.trim();
-      const target = document.getElementById('sentence').textContent;
-      if (input === target) {
+      if (input === currentSentence) {
         score += 100;
         document.getElementById('result').textContent = '✅ 정답!';
       } else {
