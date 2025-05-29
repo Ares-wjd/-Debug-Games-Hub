@@ -1,12 +1,10 @@
-<!-- ai-word-game.html: 종료 화면에 정확히 최종 점수와 순위 표시 -->
+<!-- ai-word-game.html: 종료 화면에서 점수와 순위가 확실히 보이도록 수정 -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>디버그 동아리 | AI 단어 설명 게임</title>
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
   <style>
     body { font-family: 'Poppins', sans-serif; background: radial-gradient(circle at top left, #1c1c1c, #2b5876, #4e4376); margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; color: #fff; }
     .container { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(20px); width: 90%; max-width: 600px; padding: 40px; border-radius: 20px; box-shadow: 0 15px 40px rgba(0,0,0,0.5); text-align: center; animation: fadeIn 1s ease; }
@@ -17,8 +15,8 @@
     button { width: 90%; background: linear-gradient(135deg, #00c6ff, #0072ff); color: #fff; font-weight: 600; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
     button:hover { transform: scale(1.05); box-shadow: 0 8px 20px rgba(0, 114, 255, 0.5); }
     #result { font-size: 1.2em; margin-top: 15px; font-weight: bold; min-height: 1.5em; }
+    #finalScoreBox { margin: 20px 0; font-size: 1.6em; color: gold; }
     #finalButtons { margin-top: 20px; }
-    #finalScoreInfo { font-size: 1.5em; margin: 20px 0; color: gold; }
     #descriptionText { margin: 15px 0; background: rgba(255,255,255,0.1); padding: 12px; border-radius: 14px; display: none; text-align: left; font-size: 0.9em; }
     #timeBarContainer { width: 100%; height: 18px; background: #333; border-radius: 10px; margin: 15px 0; overflow: hidden; }
     #timeBar { width: 100%; height: 100%; background: #4caf50; transition: width 1s linear, background-color 0.5s; }
@@ -52,7 +50,8 @@
       <div id="attempts">남은 시도: 3회</div>
     </div>
     <div id="endArea" style="display:none;">
-      <div id="finalScoreInfo"></div>
+      <h2>🎉 게임 종료</h2>
+      <div id="finalScoreBox">최종 점수와 순위를 불러오는 중...</div>
       <div id="finalButtons">
         <button onclick="startGame()">다시 시작</button>
         <button onclick="goBack()">메인으로 돌아가기</button>
@@ -61,17 +60,6 @@
   </div>
 
   <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyDwk8QF3jJMzk30QeJR_kFTq6gQXGmoiG4",
-      authDomain: "debug-games-hub.firebaseapp.com",
-      projectId: "debug-games-hub",
-      storageBucket: "debug-games-hub.firebasestorage.app",
-      messagingSenderId: "391096300170",
-      appId: "1:391096300170:web:156898c1574c15fca9f373"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-
     const problems = [
       { answer: "의자", hints: ["앉을 수 있음", "네 다리", "책상 옆에 있음"] },
       { answer: "토끼", hints: ["귀가 긺", "풀을 먹음", "깡총깡총"] }
@@ -86,7 +74,7 @@
     const gameExplanation = document.getElementById('gameExplanation');
     const gameArea = document.getElementById('gameArea');
     const endArea = document.getElementById('endArea');
-    const finalScoreInfo = document.getElementById('finalScoreInfo');
+    const finalScoreBox = document.getElementById('finalScoreBox');
     const descriptionText = document.getElementById('descriptionText');
     const timerDisplay = document.getElementById('timer');
     const timeBar = document.getElementById('timeBar');
@@ -188,34 +176,7 @@
       clearInterval(timerInterval);
       gameArea.style.display = 'none';
       endArea.style.display = 'block';
-      saveScoreAndShowRank();
-    }
-
-    function saveScoreAndShowRank() {
-      const user = JSON.parse(localStorage.getItem('currentUser'));
-      if (!user) return;
-      const newEntry = {
-        id: user.id,
-        name: user.name,
-        game: 'AI 단어 설명 게임',
-        score: score,
-        time: new Date().toISOString()
-      };
-      const newKey = db.ref().child('rankings').push().key;
-      const updates = {};
-      updates['/rankings/' + newKey] = newEntry;
-      db.ref().update(updates).then(() => {
-        db.ref('/rankings').orderByChild('game').equalTo('AI 단어 설명 게임').once('value', snapshot => {
-          const allScores = [];
-          snapshot.forEach(child => {
-            allScores.push(child.val().score);
-          });
-          allScores.sort((a, b) => b - a);
-          const rank = allScores.indexOf(score) + 1;
-          finalScoreInfo.innerHTML = `🎉 최종 점수: ${score}점<br>🏆 현재 순위: ${rank}위`;
-          flashEffect('#ffd700');
-        });
-      });
+      finalScoreBox.innerHTML = `🎉 최종 점수: ${score}점`;
     }
 
     function goBack() {
