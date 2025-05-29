@@ -1,4 +1,4 @@
-<!-- ai-word-game.html: Firebase 연동 + 최종 메인화면 복귀 버튼 추가 -->
+<!-- ai-word-game.html: Firebase 연동 + 게임 설명 수정 -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -16,15 +16,24 @@
     button:hover { transform: scale(1.05); }
     #result { font-size: 1.2em; margin-top: 10px; font-weight: bold; }
     #finalButtons { margin-top: 20px; }
+    #descriptionText { margin: 15px 0; background: rgba(255,255,255,0.1); padding: 10px; border-radius: 12px; display: none; }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>🤖 AI 단어 설명 게임</h1>
     <div id="gameExplanation">
-      <p>AI가 하나씩 설명을 추가하며 정답을 맞히게 됩니다.<br>게임을 시작하려면 아래 버튼을 눌러주세요.</p>
+      <p>AI가 하나씩 설명을 추가하며 정답을 맞히게 됩니다.<br>게임을 시작하거나 게임 설명을 보려면 버튼을 눌러주세요.</p>
       <button onclick="startGame()">게임 시작</button>
+      <button onclick="showDescription()">게임 설명 보기</button>
       <button onclick="goBack()">메인으로 돌아가기</button>
+      <div id="descriptionText">
+        <strong>게임 설명:</strong><br>
+        - AI가 문제당 최대 3개의 힌트를 순차적으로 제공합니다.<br>
+        - 한 문제당 3회까지 정답을 시도할 수 있으며, 시도 횟수에 따라 점수가 다릅니다.<br>
+        (첫 시도: 25점, 두 번째 시도: 15점, 세 번째 시도: 5점)<br>
+        - 3회 모두 틀리면 정답이 공개되고 다음 문제로 넘어갑니다.
+      </div>
     </div>
     <div id="gameArea" style="display:none;">
       <div id="hint">힌트가 여기에 표시됩니다</div>
@@ -65,6 +74,7 @@
     const gameExplanation = document.getElementById('gameExplanation');
     const gameArea = document.getElementById('gameArea');
     const finalButtons = document.getElementById('finalButtons');
+    const descriptionText = document.getElementById('descriptionText');
     const body = document.body;
 
     function startGame() {
@@ -74,6 +84,10 @@
       score = 0;
       currentIndex = 0;
       loadProblem();
+    }
+
+    function showDescription() {
+      descriptionText.style.display = descriptionText.style.display === 'none' ? 'block' : 'none';
     }
 
     function loadProblem() {
