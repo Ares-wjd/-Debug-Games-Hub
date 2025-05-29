@@ -1,64 +1,62 @@
-<!-- index.html: 관리자 전용 기능 복원 및 Firebase 연동 -->
+<!-- ai-word-game.html: 종료 화면에서 점수와 순위가 확실히 보이도록 + Firebase 점수 기록 추가 -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Debug Games Hub | 메인 페이지</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet">
+  <title>디버그 동아리 | AI 단어 설명 게임</title>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
   <style>
-    body { font-family: 'Poppins', sans-serif; background: linear-gradient(135deg, #0f2027, #203a43, #2c5364); margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; color: #fff; }
-    .container { background: rgba(255, 255, 255, 0.07); backdrop-filter: blur(15px); width: 90%; max-width: 700px; padding: 50px; border-radius: 24px; box-shadow: 0 12px 40px rgba(0,0,0,0.5); text-align: center; transition: transform 0.3s; }
-    .container:hover { transform: translateY(-5px); }
-    h1 { margin-bottom: 10px; font-size: 2.5rem; letter-spacing: 2px; }
-    .logo img { width: 100px; height: 100px; margin-bottom: 20px; border-radius: 50%; object-fit: cover; }
-    input, button { width: 100%; padding: 14px; margin: 12px 0; font-size: 1em; border: none; border-radius: 12px; outline: none; }
-    input { background: rgba(255, 255, 255, 0.1); color: #fff; border: 1px solid rgba(255,255,255,0.3); }
+    body { font-family: 'Poppins', sans-serif; background: radial-gradient(circle at top left, #1c1c1c, #2b5876, #4e4376); margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; color: #fff; }
+    .container { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(20px); width: 90%; max-width: 600px; padding: 40px; border-radius: 20px; box-shadow: 0 15px 40px rgba(0,0,0,0.5); text-align: center; animation: fadeIn 1s ease; }
+    h1, h2 { margin: 10px 0; }
+    input, button { padding: 14px; margin: 10px 0; font-size: 1em; border-radius: 12px; border: none; }
+    input { width: 85%; background: rgba(255, 255, 255, 0.2); color: #fff; border: 1px solid rgba(255,255,255,0.3); }
     input::placeholder { color: rgba(255,255,255,0.6); }
-    button { background: linear-gradient(135deg, #ff416c, #ff4b2b); color: #fff; font-weight: 600; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
-    button:hover { transform: scale(1.05); box-shadow: 0 6px 20px rgba(255,75,43,0.5); }
-    .hidden { display: none; }
-    .note { font-size: 0.9rem; margin-bottom: 15px; color: #ffd700; }
-    .ranking-list { margin-top: 20px; text-align: left; background: rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 16px; }
-    .ranking-list div { padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.2); }
-    .ranking-list div:last-child { border-bottom: none; }
-    .admin-panel { background: rgba(255,255,255,0.1); padding: 20px; border-radius: 16px; margin-top: 20px; text-align: left; }
+    button { width: 90%; background: linear-gradient(135deg, #00c6ff, #0072ff); color: #fff; font-weight: 600; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+    button:hover { transform: scale(1.05); box-shadow: 0 8px 20px rgba(0, 114, 255, 0.5); }
+    #result { font-size: 1.2em; margin-top: 15px; font-weight: bold; min-height: 1.5em; }
+    #finalScoreBox { margin: 20px 0; font-size: 1.6em; color: gold; }
+    #finalButtons { margin-top: 20px; }
+    #descriptionText { margin: 15px 0; background: rgba(255,255,255,0.1); padding: 12px; border-radius: 14px; display: none; text-align: left; font-size: 0.9em; }
+    #timeBarContainer { width: 100%; height: 18px; background: #333; border-radius: 10px; margin: 15px 0; overflow: hidden; }
+    #timeBar { width: 100%; height: 100%; background: #4caf50; transition: width 1s linear, background-color 0.5s; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="logo">
-      <img src="images/logo.png" alt="Debug Games Hub Logo">
-    </div>
-    <div id="loginSection">
-      <h1>Debug Games Hub</h1>
-      <div class="note">예: 학생 → 학번 1101 / 선생님 → 학번 0000</div>
-      <input type="text" id="studentId" placeholder="학번 (예: 1101, 0000)" />
-      <input type="text" id="studentName" placeholder="이름" />
-      <button onclick="login()">로그인</button>
-    </div>
-
-    <div id="menuSection" class="hidden">
-      <div class="user-info" id="userInfo"></div>
-      <h2>게임 선택</h2>
-      <button onclick="goToGame('ai-word-game.html')">🤖 AI 단어 설명 게임</button>
-      <button onclick="goToGame('memory-card-game.html')">🧠 기억력 카드 게임</button>
-      <button onclick="goToGame('programming-quiz.html')">💻 프로그래밍 퀴즈 게임</button>
-      <button onclick="goToGame('typing-speed-test.html')">⌨️ 타자 속도 테스트 게임</button>
-      <button onclick="showRanking()">🏆 랭킹 보기</button>
-      <button onclick="logout()" style="background: linear-gradient(135deg, #43cea2, #185a9d); margin-top:20px;">🚪 로그아웃</button>
-
-      <div id="rankingSection" class="hidden">
-        <h3>전체 합산 랭킹</h3>
-        <div class="ranking-list" id="totalRanking"></div>
+    <h1>🤖 AI 단어 설명 게임</h1>
+    <div id="gameExplanation">
+      <p>AI가 힌트를 하나씩 주며 정답을 맞히게 됩니다. 아래 버튼을 눌러 시작하거나 게임 설명을 확인하세요.</p>
+      <button onclick="startGame()">게임 시작</button>
+      <button onclick="showDescription()">게임 설명 보기</button>
+      <button onclick="goBack()">메인으로 돌아가기</button>
+      <div id="descriptionText">
+        <strong>게임 설명:</strong><br>
+        - 제한 시간: 180초<br>
+        - AI가 문제당 최대 3개의 힌트를 순차적으로 제공합니다.<br>
+        - 각 문제당 최대 3회 시도, 시도 횟수에 따라 점수 차등 부여 (25점, 15점, 5점)<br>
+        - 3회 모두 실패 시 정답 공개 후 다음 문제 진행
       </div>
-
-      <div id="adminPanel" class="hidden admin-panel">
-        <h3>관리자 전용 기능</h3>
-        <button onclick="resetAllData()" style="background: linear-gradient(135deg, #ff8c00, #ff0080);">⚠️ 모든 데이터 초기화</button>
-        <div id="adminInfo"></div>
+    </div>
+    <div id="gameArea" style="display:none;">
+      <div>⏰ 남은 시간: <span id="timer">180</span>초</div>
+      <div id="timeBarContainer"><div id="timeBar"></div></div>
+      <div id="hint" style="margin: 15px 0; font-size: 1.1em;">힌트가 여기에 표시됩니다</div>
+      <input type="text" id="guessInput" placeholder="정답을 입력하세요" onkeydown="if(event.key==='Enter') checkAnswer()">
+      <button onclick="checkAnswer()">제출</button>
+      <div id="scoreBoard">점수: 0점</div>
+      <div id="result"></div>
+      <div id="attempts">남은 시도: 3회</div>
+    </div>
+    <div id="endArea" style="display:none;">
+      <h2>🎉 게임 종료</h2>
+      <div id="finalScoreBox">최종 점수와 순위를 불러오는 중...</div>
+      <div id="finalButtons">
+        <button onclick="startGame()">다시 시작</button>
+        <button onclick="goBack()">메인으로 돌아가기</button>
       </div>
     </div>
   </div>
@@ -74,87 +72,144 @@
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-    let currentUser = null;
+    const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
 
-    function login() {
-      const id = document.getElementById('studentId').value.trim();
-      const name = document.getElementById('studentName').value.trim();
-      if (!id || !name) {
-        alert('학번과 이름을 모두 입력해주세요.');
-        return;
-      }
-      currentUser = { id, name };
-      db.ref('users/' + id).set(currentUser);
-      document.getElementById('loginSection').classList.add('hidden');
-      document.getElementById('menuSection').classList.remove('hidden');
-      document.getElementById('userInfo').textContent = (id === '7410' && name.toLowerCase() === 'admin') ? `환영합니다, 관리자님!` : `환영합니다, ${name} (${id})님!`;
-      if (id === '7410' && name.toLowerCase() === 'admin') {
-        document.getElementById('adminPanel').classList.remove('hidden');
-        loadAdminData();
-      }
-    }
+    const problems = [
+      { answer: "의자", hints: ["앉을 수 있음", "네 다리", "책상 옆에 있음"] },
+      { answer: "토끼", hints: ["귀가 긺", "풀을 먹음", "깡총깡총"] }
+    ];
 
-    function logout() {
-      currentUser = null;
-      document.getElementById('menuSection').classList.add('hidden');
-      document.getElementById('loginSection').classList.remove('hidden');
-      document.getElementById('adminPanel').classList.add('hidden');
-    }
+    let currentIndex = 0, score = 0, hintStep = 0, attempts = 3, timeLeft = 180, timerInterval;
+    const hintDiv = document.getElementById('hint');
+    const resultDiv = document.getElementById('result');
+    const scoreBoard = document.getElementById('scoreBoard');
+    const guessInput = document.getElementById('guessInput');
+    const attemptsDiv = document.getElementById('attempts');
+    const gameExplanation = document.getElementById('gameExplanation');
+    const gameArea = document.getElementById('gameArea');
+    const endArea = document.getElementById('endArea');
+    const finalScoreBox = document.getElementById('finalScoreBox');
+    const descriptionText = document.getElementById('descriptionText');
+    const timerDisplay = document.getElementById('timer');
+    const timeBar = document.getElementById('timeBar');
+    const body = document.body;
 
-    function goToGame(page) {
-      if (!currentUser) {
-        alert('로그인이 필요합니다.');
-        return;
-      }
-      sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
-      window.location.href = `/-Debug-Games-Hub/${page}`;
-    }
-
-    function showRanking() {
-      const rankingSection = document.getElementById('rankingSection');
-      const totalRanking = document.getElementById('totalRanking');
-      totalRanking.innerHTML = '';
-
-      db.ref('rankings').once('value').then(snapshot => {
-        const data = snapshot.val();
-        if (!data) {
-          totalRanking.innerHTML = '<div>랭킹 데이터가 없습니다.</div>';
-          return;
+    function startGame() {
+      gameExplanation.style.display = 'none';
+      gameArea.style.display = 'block';
+      endArea.style.display = 'none';
+      score = 0;
+      currentIndex = 0;
+      timeLeft = 180;
+      updateTimeBar();
+      timerDisplay.textContent = timeLeft;
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        timerDisplay.textContent = timeLeft;
+        updateTimeBar();
+        if (timeLeft <= 0) {
+          clearInterval(timerInterval);
+          endGame();
         }
-        const rankingArray = Object.values(data);
-        const userScores = {};
-        rankingArray.forEach(entry => {
-          if (!userScores[entry.id] || userScores[entry.id] < entry.score) {
-            userScores[entry.id] = { name: entry.name, score: entry.score };
-          }
-        });
-        const sorted = Object.entries(userScores).sort((a, b) => b[1].score - a[1].score);
-        sorted.slice(0, 5).forEach(([id, info], index) => {
-          totalRanking.innerHTML += `<div>${index + 1}위 - ${info.name} (${id}): ${info.score}점</div>`;
-        });
-      });
-
-      rankingSection.classList.toggle('hidden');
+      }, 1000);
+      loadProblem();
     }
 
-    function loadAdminData() {
-      const adminInfo = document.getElementById('adminInfo');
-      db.ref('users').once('value').then(snapshot => {
-        const users = snapshot.val();
-        let html = '<strong>사용자 목록:</strong><br>';
-        Object.entries(users).forEach(([id, user]) => {
-          html += `🔹 ${user.name} (${id})<br>`;
-        });
-        adminInfo.innerHTML = html;
-      });
-    }
-
-    function resetAllData() {
-      if (confirm('⚠️ 정말로 모든 데이터를 초기화하시겠습니까?')) {
-        db.ref('rankings').remove();
-        db.ref('users').remove();
-        alert('모든 데이터가 초기화되었습니다.');
+    function updateTimeBar() {
+      const percent = (timeLeft / 180) * 100;
+      timeBar.style.width = percent + '%';
+      if (percent > 60) {
+        timeBar.style.backgroundColor = '#4caf50';
+      } else if (percent > 30) {
+        timeBar.style.backgroundColor = '#ff9800';
+      } else {
+        timeBar.style.backgroundColor = '#f44336';
       }
+    }
+
+    function showDescription() {
+      descriptionText.style.display = descriptionText.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function loadProblem() {
+      if (currentIndex >= problems.length) {
+        endGame();
+        return;
+      }
+      hintStep = 0;
+      attempts = 3;
+      attemptsDiv.textContent = `남은 시도: ${attempts}회`;
+      showNextHint();
+      guessInput.value = '';
+      resultDiv.textContent = '';
+    }
+
+    function showNextHint() {
+      const currentHints = problems[currentIndex].hints;
+      if (hintStep < currentHints.length) {
+        hintDiv.textContent = currentHints.slice(0, hintStep + 1).join(', ');
+        hintStep++;
+      }
+    }
+
+    function checkAnswer() {
+      const input = guessInput.value.trim();
+      if (!input) return;
+      if (input === problems[currentIndex].answer) {
+        let points = attempts === 3 ? 25 : attempts === 2 ? 15 : 5;
+        score += points;
+        resultDiv.innerHTML = `<span style='color: #4caf50;'>정답! +${points}점</span>`;
+        scoreBoard.textContent = `점수: ${score}점`;
+        flashEffect('#4caf50');
+        currentIndex++;
+        setTimeout(loadProblem, 1000);
+      } else {
+        attempts--;
+        if (attempts > 0) {
+          resultDiv.innerHTML = `<span style='color: #f44336;'>오답! 다음 힌트 추가 (남은 시도 ${attempts}회)</span>`;
+          flashEffect('#f44336');
+          attemptsDiv.textContent = `남은 시도: ${attempts}회`;
+          showNextHint();
+        } else {
+          resultDiv.innerHTML = `<span style='color: #f44336;'>실패! 정답은 "${problems[currentIndex].answer}"였습니다.</span>`;
+          flashEffect('#f44336');
+          currentIndex++;
+          setTimeout(loadProblem, 2000);
+        }
+      }
+      guessInput.value = '';
+    }
+
+    function flashEffect(color) {
+      const original = body.style.background;
+      body.style.background = color;
+      setTimeout(() => { body.style.background = ''; }, 300);
+    }
+
+    function endGame() {
+      clearInterval(timerInterval);
+      gameArea.style.display = 'none';
+      endArea.style.display = 'block';
+      finalScoreBox.innerHTML = `🎉 최종 점수: ${score}점`;
+      saveScoreToFirebase(score);
+    }
+
+    function saveScoreToFirebase(score) {
+      if (!currentUser) return;
+      const entry = {
+        id: currentUser.id,
+        name: currentUser.name,
+        game: 'AI 단어 설명 게임',
+        score: score,
+        timestamp: Date.now()
+      };
+      db.ref('rankings').push(entry)
+        .then(() => console.log('점수 저장 성공'))
+        .catch(error => console.error('점수 저장 실패', error));
+    }
+
+    function goBack() {
+      window.location.href = '/-Debug-Games-Hub/index.html';
     }
   </script>
 </body>
