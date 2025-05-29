@@ -1,97 +1,102 @@
-<!-- programming-quiz.html: Firebase 연동 버전 -->
+<!-- programming-quiz.html: 프로그래밍 퀴즈 게임 (localStorage 기반 점수 저장) -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>디버그 동아리 | 프로그래밍 퀴즈 게임</title>
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+  <title>프로그래밍 퀴즈 게임</title>
   <style>
-    body { font-family: 'Poppins', sans-serif; background: linear-gradient(135deg, #0f2027, #203a43, #2c5364); margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; color: #fff; }
-    .container { background: rgba(255, 255, 255, 0.07); backdrop-filter: blur(15px); width: 90%; max-width: 700px; padding: 30px; border-radius: 16px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); text-align: center; }
-    button { padding: 12px; margin: 10px; font-size: 1em; border-radius: 8px; border: none; background: linear-gradient(135deg, #ff416c, #ff4b2b); color: #fff; cursor: pointer; }
-    button:hover { transform: scale(1.05); }
+    body { font-family: sans-serif; background: linear-gradient(135deg, #1f4037, #99f2c8); color: #333; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+    .container { background: #fff; padding: 30px; border-radius: 16px; width: 90%; max-width: 600px; box-shadow: 0 12px 40px rgba(0,0,0,0.3); text-align: center; }
+    h1 { margin-bottom: 20px; }
+    button { padding: 10px; margin: 10px 0; border: none; border-radius: 8px; width: 100%; background: #4caf50; color: #fff; font-size: 1em; cursor: pointer; }
+    button:hover { background: #43a047; }
+    .hidden { display: none; }
+    #feedback { font-size: 1.2em; margin-top: 10px; }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>💻 프로그래밍 퀴즈 게임</h1>
-    <div id="questionBox"></div>
-    <div id="options"></div>
-    <div id="scoreBoard">점수: 0</div>
-    <button onclick="goBack()">메인으로 돌아가기</button>
+    <div id="quizArea">
+      <p id="question"></p>
+      <div id="options"></div>
+      <p id="score">점수: 0</p>
+      <p id="feedback"></p>
+    </div>
+    <div id="endArea" class="hidden">
+      <h2>🎉 게임 종료</h2>
+      <p id="finalScore"></p>
+      <button onclick="restartGame()">다시 시작</button>
+      <button onclick="goToMain()">메인으로 돌아가기</button>
+    </div>
   </div>
 
   <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyDwk8QF3jJMzk30QeJR_kFTq6gQXGmoiG4",
-      authDomain: "debug-games-hub.firebaseapp.com",
-      projectId: "debug-games-hub",
-      storageBucket: "debug-games-hub.firebasestorage.app",
-      messagingSenderId: "391096300170",
-      appId: "1:391096300170:web:156898c1574c15fca9f373"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
     const questions = [
-      { q: 'Python에서 리스트 길이를 구하는 함수?', a: ['size()', 'length()', 'len()', 'count()'], correct: 2 },
-      { q: 'JavaScript에서 배열 길이를 구하는 속성?', a: ['size', 'length', 'count', 'number'], correct: 1 },
-      { q: 'Python에서 예외 처리를 위해 사용하는 키워드?', a: ['except', 'catch', 'error', 'fail'], correct: 0 }
+      { q: 'Python에서 리스트 길이를 구하는 함수는?', opts: ['size()', 'len()', 'count()', 'length()'], ans: 1 },
+      { q: 'JS에서 배열의 길이를 구하는 속성은?', opts: ['size', 'length', 'count', 'total'], ans: 1 },
+      { q: 'Python에서 반복문 키워드는?', opts: ['repeat', 'for', 'loop', 'whilefor'], ans: 1 },
     ];
-
-    let current = 0, score = 0;
-    const qBox = document.getElementById('questionBox');
-    const optionsDiv = document.getElementById('options');
-    const scoreBoard = document.getElementById('scoreBoard');
+    let score = 0;
+    let currentIdx = 0;
 
     function loadQuestion() {
-      if (current >= questions.length) {
-        saveScore();
-        qBox.textContent = `게임 종료! 최종 점수: ${score}`;
-        optionsDiv.innerHTML = '';
+      if (currentIdx >= questions.length) {
+        endGame();
         return;
       }
-      const q = questions[current];
-      qBox.textContent = q.q;
-      optionsDiv.innerHTML = '';
-      q.a.forEach((opt, idx) => {
+      const q = questions[currentIdx];
+      document.getElementById('question').textContent = q.q;
+      const optsDiv = document.getElementById('options');
+      optsDiv.innerHTML = '';
+      q.opts.forEach((opt, idx) => {
         const btn = document.createElement('button');
         btn.textContent = opt;
         btn.onclick = () => checkAnswer(idx);
-        optionsDiv.appendChild(btn);
+        optsDiv.appendChild(btn);
       });
     }
 
-    function checkAnswer(idx) {
-      if (idx === questions[current].correct) {
-        score += 10;
-        scoreBoard.textContent = `점수: ${score}`;
+    function checkAnswer(selected) {
+      const q = questions[currentIdx];
+      const feedback = document.getElementById('feedback');
+      if (selected === q.ans) {
+        score += 100;
+        feedback.textContent = '✅ 정답!';
+      } else {
+        feedback.textContent = '❌ 오답!';
       }
-      current++;
-      loadQuestion();
+      document.getElementById('score').textContent = `점수: ${score}`;
+      currentIdx++;
+      setTimeout(loadQuestion, 1000);
     }
 
-    function saveScore() {
-      const user = JSON.parse(localStorage.getItem('currentUser'));
-      if (!user) return;
-      const newEntry = {
-        id: user.id,
-        name: user.name,
-        game: '프로그래밍 퀴즈 게임',
-        score: score,
-        time: new Date().toISOString()
-      };
-      const newKey = db.ref().child('rankings').push().key;
-      const updates = {};
-      updates['/rankings/' + newKey] = newEntry;
-      db.ref().update(updates);
-      alert(`최종 점수: ${score}`);
+    function endGame() {
+      document.getElementById('quizArea').classList.add('hidden');
+      document.getElementById('endArea').classList.remove('hidden');
+      document.getElementById('finalScore').textContent = `최종 점수: ${score}점`;
+      saveScoreLocal('프로그래밍 퀴즈 게임', score);
     }
 
-    function goBack() {
-      window.location.href = '/-Debug-Games-Hub/index.html';
+    function restartGame() {
+      location.reload();
+    }
+
+    function goToMain() {
+      window.location.href = 'index.html';
+    }
+
+    function saveScoreLocal(gameName, score) {
+      if (!currentUser) {
+        console.warn('로그인 정보 없음, 점수 저장 생략');
+        return;
+      }
+      const allData = JSON.parse(localStorage.getItem('allGameRankings') || '[]');
+      allData.push({ id: currentUser.id, name: currentUser.name, game: gameName, score: score, timestamp: Date.now() });
+      localStorage.setItem('allGameRankings', JSON.stringify(allData));
+      console.log('점수 localStorage에 저장 완료');
     }
 
     window.onload = loadQuestion;
