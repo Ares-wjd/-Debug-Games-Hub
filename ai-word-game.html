@@ -1,4 +1,4 @@
-<!-- ai-word-game.html: Firebase 연동 + 게임 설명 수정 -->
+<!-- ai-word-game.html: Firebase 연동 + 180초 제한시간 추가 -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -29,13 +29,16 @@
       <button onclick="goBack()">메인으로 돌아가기</button>
       <div id="descriptionText">
         <strong>게임 설명:</strong><br>
+        - 제한 시간: 180초<br>
         - AI가 문제당 최대 3개의 힌트를 순차적으로 제공합니다.<br>
         - 한 문제당 3회까지 정답을 시도할 수 있으며, 시도 횟수에 따라 점수가 다릅니다.<br>
         (첫 시도: 25점, 두 번째 시도: 15점, 세 번째 시도: 5점)<br>
-        - 3회 모두 틀리면 정답이 공개되고 다음 문제로 넘어갑니다.
+        - 3회 모두 틀리면 정답이 공개되고 다음 문제로 넘어갑니다.<br>
+        - 시간이 종료되면 즉시 게임이 중단되고 최종 점수가 공개됩니다.
       </div>
     </div>
     <div id="gameArea" style="display:none;">
+      <div>남은 시간: <span id="timer">180</span>초</div>
       <div id="hint">힌트가 여기에 표시됩니다</div>
       <input type="text" id="guessInput" placeholder="정답을 입력하세요" onkeydown="if(event.key==='Enter') checkAnswer()">
       <button onclick="checkAnswer()">제출</button>
@@ -65,7 +68,7 @@
       { answer: "토끼", hints: ["귀가 긺", "풀을 먹음", "깡총깡총"] }
     ];
 
-    let currentIndex = 0, score = 0, hintStep = 0, attempts = 3;
+    let currentIndex = 0, score = 0, hintStep = 0, attempts = 3, timeLeft = 180, timerInterval;
     const hintDiv = document.getElementById('hint');
     const resultDiv = document.getElementById('result');
     const scoreBoard = document.getElementById('scoreBoard');
@@ -75,6 +78,7 @@
     const gameArea = document.getElementById('gameArea');
     const finalButtons = document.getElementById('finalButtons');
     const descriptionText = document.getElementById('descriptionText');
+    const timerDisplay = document.getElementById('timer');
     const body = document.body;
 
     function startGame() {
@@ -83,6 +87,16 @@
       finalButtons.style.display = 'none';
       score = 0;
       currentIndex = 0;
+      timeLeft = 180;
+      timerDisplay.textContent = timeLeft;
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        timerDisplay.textContent = timeLeft;
+        if (timeLeft <= 0) {
+          clearInterval(timerInterval);
+          endGame();
+        }
+      }, 1000);
       loadProblem();
     }
 
@@ -92,10 +106,7 @@
 
     function loadProblem() {
       if (currentIndex >= problems.length) {
-        saveScore();
-        resultDiv.innerHTML = `<span style='color: gold;'>게임 종료! 최종 점수: ${score}점</span>`;
-        flashEffect('#ffd700');
-        finalButtons.style.display = 'block';
+        endGame();
         return;
       }
       hintStep = 0;
@@ -146,6 +157,14 @@
       const original = body.style.background;
       body.style.background = color;
       setTimeout(() => { body.style.background = ''; }, 300);
+    }
+
+    function endGame() {
+      clearInterval(timerInterval);
+      saveScore();
+      resultDiv.innerHTML = `<span style='color: gold;'>게임 종료! 최종 점수: ${score}점</span>`;
+      flashEffect('#ffd700');
+      finalButtons.style.display = 'block';
     }
 
     function saveScore() {
