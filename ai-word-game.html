@@ -1,4 +1,4 @@
-<!-- ai-word-game.html: 전체 UI 디자인 개선 -->
+<!-- ai-word-game.html: 게임 종료 후 랭킹 순위 표시 추가 -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -181,13 +181,10 @@
 
     function endGame() {
       clearInterval(timerInterval);
-      saveScore();
-      resultDiv.innerHTML = `<span style='color: gold;'>게임 종료! 최종 점수: ${score}점</span>`;
-      flashEffect('#ffd700');
-      finalButtons.style.display = 'block';
+      saveScoreAndShowRank();
     }
 
-    function saveScore() {
+    function saveScoreAndShowRank() {
       const user = JSON.parse(localStorage.getItem('currentUser'));
       if (!user) return;
       const newEntry = {
@@ -200,8 +197,19 @@
       const newKey = db.ref().child('rankings').push().key;
       const updates = {};
       updates['/rankings/' + newKey] = newEntry;
-      db.ref().update(updates);
-      alert(`게임 종료! 최종 점수: ${score}점`);
+      db.ref().update(updates).then(() => {
+        db.ref('/rankings').orderByChild('game').equalTo('AI 단어 설명 게임').once('value', snapshot => {
+          const allScores = [];
+          snapshot.forEach(child => {
+            allScores.push(child.val().score);
+          });
+          allScores.sort((a, b) => b - a);
+          const rank = allScores.indexOf(score) + 1;
+          resultDiv.innerHTML = `<span style='color: gold;'>게임 종료! 최종 점수: ${score}점 (현재 ${rank}위)</span>`;
+          flashEffect('#ffd700');
+          finalButtons.style.display = 'block';
+        });
+      });
     }
 
     function goBack() {
