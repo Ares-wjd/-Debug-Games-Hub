@@ -1,97 +1,102 @@
-<!-- typing-speed-test.html: Firebase 연동 버전 -->
+<!-- typing-speed-test.html: 타자 속도 테스트 게임 (localStorage 기반 점수 저장) -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>디버그 동아리 | 타자 속도 테스트</title>
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+  <title>타자 속도 테스트 게임</title>
   <style>
-    body { font-family: 'Poppins', sans-serif; background: linear-gradient(135deg, #0f2027, #203a43, #2c5364); margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; color: #fff; }
-    .container { background: rgba(255, 255, 255, 0.07); backdrop-filter: blur(15px); width: 90%; max-width: 700px; padding: 30px; border-radius: 16px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); text-align: center; }
-    input, button { padding: 12px; margin: 10px; font-size: 1em; border-radius: 8px; border: none; }
-    input { width: 80%; }
-    button { background: linear-gradient(135deg, #ff416c, #ff4b2b); color: #fff; cursor: pointer; }
-    button:hover { transform: scale(1.05); }
-    .highlight-correct { color: #4caf50; }
-    .highlight-wrong { color: #f44336; }
+    body { font-family: sans-serif; background: linear-gradient(135deg, #373b44, #4286f4); color: #fff; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+    .container { background: rgba(0,0,0,0.6); padding: 30px; border-radius: 16px; width: 90%; max-width: 600px; text-align: center; }
+    h1 { margin-bottom: 20px; }
+    input, button { padding: 10px; margin: 10px 0; border: none; border-radius: 8px; width: 100%; font-size: 1em; }
+    input { color: #333; }
+    button { background: #4caf50; color: #fff; cursor: pointer; }
+    button:hover { background: #43a047; }
+    #result { font-size: 1.2em; margin-top: 10px; }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>⌨️ 타자 속도 테스트</h1>
-    <div id="sentence">문장이 여기에 표시됩니다</div>
+    <h1>⌨️ 타자 속도 테스트 게임</h1>
+    <p id="sentence">문장이 여기에 표시됩니다.</p>
     <input type="text" id="inputArea" placeholder="여기에 입력하세요">
-    <div id="result"></div>
-    <button onclick="startGame()">다시 시작</button>
-    <button onclick="goBack()">메인으로 돌아가기</button>
+    <button onclick="checkInput()">제출</button>
+    <p id="score">점수: 0</p>
+    <p id="timer">남은 시간: 60초</p>
+    <p id="result"></p>
+    <div id="endArea" style="display:none;">
+      <h2>🎉 게임 종료</h2>
+      <p id="finalScore"></p>
+      <button onclick="restartGame()">다시 시작</button>
+      <button onclick="goToMain()">메인으로 돌아가기</button>
+    </div>
   </div>
 
   <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyDwk8QF3jJMzk30QeJR_kFTq6gQXGmoiG4",
-      authDomain: "debug-games-hub.firebaseapp.com",
-      projectId: "debug-games-hub",
-      storageBucket: "debug-games-hub.firebasestorage.app",
-      messagingSenderId: "391096300170",
-      appId: "1:391096300170:web:156898c1574c15fca9f373"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
     const sentences = [
       "오늘은 맑고 화창한 날씨입니다.",
-      "나는 아침에 따뜻한 커피를 마셨습니다.",
-      "학교에서 친구들과 재미있게 놀았습니다.",
-      "지구의 자전과 공전은 계절의 변화와 낮밤을 만들어 냅니다.",
-      "인공지능 기술은 점점 더 우리의 삶에 깊숙이 스며들고 있습니다."
+      "나는 매일 아침 산책을 합니다.",
+      "정보 보안은 필수적인 요소입니다.",
+      "코딩은 창의성과 논리적 사고를 요구합니다."
     ];
-
-    let target = '', startTime = 0;
-    const sentenceDiv = document.getElementById('sentence');
-    const inputEl = document.getElementById('inputArea');
-    const resultDiv = document.getElementById('result');
+    let score = 0;
+    let timeLeft = 60;
+    let timer;
 
     function startGame() {
-      target = sentences[Math.floor(Math.random() * sentences.length)];
-      sentenceDiv.textContent = target;
-      inputEl.value = '';
-      resultDiv.textContent = '';
-      startTime = 0;
+      nextSentence();
+      timer = setInterval(() => {
+        timeLeft--;
+        document.getElementById('timer').textContent = `남은 시간: ${timeLeft}초`;
+        if (timeLeft <= 0) endGame();
+      }, 1000);
     }
 
-    inputEl.addEventListener('input', () => {
-      if (startTime === 0) startTime = new Date().getTime();
-      const userInput = inputEl.value;
-      if (userInput === target) {
-        const endTime = new Date().getTime();
-        const timeTaken = (endTime - startTime) / 1000;
-        const cpm = Math.round((target.length / timeTaken) * 60);
-        resultDiv.innerHTML = `완료! 시간: ${timeTaken.toFixed(2)}초, CPM: ${cpm}`;
-        saveScore(cpm);
+    function nextSentence() {
+      const randomIndex = Math.floor(Math.random() * sentences.length);
+      document.getElementById('sentence').textContent = sentences[randomIndex];
+      document.getElementById('inputArea').value = '';
+      document.getElementById('result').textContent = '';
+    }
+
+    function checkInput() {
+      const input = document.getElementById('inputArea').value.trim();
+      const target = document.getElementById('sentence').textContent;
+      if (input === target) {
+        score += 100;
+        document.getElementById('result').textContent = '✅ 정답!';
+      } else {
+        document.getElementById('result').textContent = '❌ 오답!';
       }
-    });
-
-    function saveScore(score) {
-      const user = JSON.parse(localStorage.getItem('currentUser'));
-      if (!user) return;
-      const newEntry = {
-        id: user.id,
-        name: user.name,
-        game: '타자 속도 테스트',
-        score: score,
-        time: new Date().toISOString()
-      };
-      const newKey = db.ref().child('rankings').push().key;
-      const updates = {};
-      updates['/rankings/' + newKey] = newEntry;
-      db.ref().update(updates);
-      alert(`최종 점수(CPM): ${score}`);
+      document.getElementById('score').textContent = `점수: ${score}`;
+      nextSentence();
     }
 
-    function goBack() {
-      window.location.href = '/-Debug-Games-Hub/index.html';
+    function endGame() {
+      clearInterval(timer);
+      document.querySelector('.container').innerHTML = `<h2>🎉 게임 종료</h2><p>최종 점수: ${score}점</p><button onclick='restartGame()'>다시 시작</button><button onclick='goToMain()'>메인으로 돌아가기</button>`;
+      saveScoreLocal('타자 속도 테스트 게임', score);
+    }
+
+    function restartGame() {
+      location.reload();
+    }
+
+    function goToMain() {
+      window.location.href = 'index.html';
+    }
+
+    function saveScoreLocal(gameName, score) {
+      if (!currentUser) {
+        console.warn('로그인 정보 없음, 점수 저장 생략');
+        return;
+      }
+      const allData = JSON.parse(localStorage.getItem('allGameRankings') || '[]');
+      allData.push({ id: currentUser.id, name: currentUser.name, game: gameName, score: score, timestamp: Date.now() });
+      localStorage.setItem('allGameRankings', JSON.stringify(allData));
+      console.log('점수 localStorage에 저장 완료');
     }
 
     window.onload = startGame;
