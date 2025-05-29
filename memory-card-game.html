@@ -1,4 +1,4 @@
-<!-- memory-card-game.html: 기억력 카드 게임 (localStorage 기반 점수 저장) -->
+<!-- memory-card-game.html: 기억력 카드 게임 (업그레이드 버전, 카드 뒤집기 및 n*n 배열 추가) -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -9,6 +9,9 @@
     body { font-family: sans-serif; background: linear-gradient(135deg, #0f2027, #203a43, #2c5364); color: #fff; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
     .container { background: rgba(0,0,0,0.6); padding: 30px; border-radius: 16px; text-align: center; width: 90%; max-width: 600px; }
     h1 { margin-bottom: 20px; }
+    #gameBoard { display: grid; gap: 10px; justify-content: center; margin: 20px 0; }
+    .card { width: 60px; height: 80px; background: #ccc; color: #000; border-radius: 8px; display: flex; justify-content: center; align-items: center; font-size: 1.2em; cursor: pointer; }
+    .card.matched { background: #4caf50; color: #fff; cursor: default; }
     button { padding: 10px; margin: 10px 0; border: none; border-radius: 8px; width: 100%; background: #4caf50; color: #fff; font-size: 1em; cursor: pointer; }
     button:hover { background: #43a047; }
     #message { font-size: 1.2em; margin-top: 10px; }
@@ -17,9 +20,9 @@
 <body>
   <div class="container">
     <h1>🧠 기억력 카드 게임</h1>
-    <div id="gameBoard"></div>
     <p id="stageInfo">단계: 1</p>
     <p id="scoreInfo">점수: 0</p>
+    <div id="gameBoard"></div>
     <button onclick="startGame()">게임 시작</button>
     <button onclick="goToMain()">메인으로 돌아가기</button>
     <p id="message"></p>
@@ -29,6 +32,9 @@
     const currentUser = JSON.parse(localStorage.getItem('currentUser'));
     let stage = 1;
     let score = 0;
+    let firstCard = null;
+    let lockBoard = false;
+    let matchedPairs = 0;
 
     function startGame() {
       score = 0;
@@ -44,13 +50,66 @@
         endGame();
         return;
       }
-      score += stage * 100;
-      document.getElementById('scoreInfo').textContent = `점수: ${score}`;
-      document.getElementById('stageInfo').textContent = `단계: ${stage}`;
+      matchedPairs = 0;
+      const board = document.getElementById('gameBoard');
+      board.innerHTML = '';
+      const gridSize = stage + 1;
+      const totalCards = gridSize * gridSize;
+      const pairCount = Math.floor(totalCards / 2);
+      const cardValues = [];
+      for (let i = 1; i <= pairCount; i++) {
+        cardValues.push(i, i);
+      }
+      if (totalCards % 2 !== 0) cardValues.push('X'); // 홀수면 더미 카드 추가
+      cardValues.sort(() => 0.5 - Math.random());
+      board.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
+      cardValues.forEach(value => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.textContent = value;
+        card.dataset.value = value;
+        board.appendChild(card);
+      });
       setTimeout(() => {
-        stage++;
-        nextStage();
-      }, 1000);
+        document.querySelectorAll('.card').forEach(card => {
+          card.textContent = '?';
+          card.addEventListener('click', handleCardClick);
+        });
+      }, 2000);
+      document.getElementById('stageInfo').textContent = `단계: ${stage}`;
+      document.getElementById('scoreInfo').textContent = `점수: ${score}`;
+    }
+
+    function handleCardClick(e) {
+      if (lockBoard) return;
+      const clicked = e.target;
+      if (clicked.classList.contains('matched') || clicked === firstCard) return;
+      clicked.textContent = clicked.dataset.value;
+      if (!firstCard) {
+        firstCard = clicked;
+      } else {
+        lockBoard = true;
+        if (firstCard.dataset.value === clicked.dataset.value) {
+          firstCard.classList.add('matched');
+          clicked.classList.add('matched');
+          matchedPairs++;
+          score += stage * 100;
+          firstCard = null;
+          lockBoard = false;
+          if (matchedPairs === Math.floor((document.querySelectorAll('.card').length) / 2)) {
+            stage++;
+            setTimeout(nextStage, 1000);
+          }
+        } else {
+          setTimeout(() => {
+            firstCard.textContent = '?';
+            clicked.textContent = '?';
+            firstCard = null;
+            lockBoard = false;
+          }, 1000);
+        }
+      }
+      document.getElementById('scoreInfo').textContent = `점수: ${score}`;
     }
 
     function endGame() {
