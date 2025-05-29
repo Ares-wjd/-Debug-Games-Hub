@@ -1,4 +1,4 @@
-<!-- ai-word-game.html: Firebase 연동 + 180초 제한시간 추가 -->
+<!-- ai-word-game.html: 제한 시간 막대 UI 추가 -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -17,6 +17,8 @@
     #result { font-size: 1.2em; margin-top: 10px; font-weight: bold; }
     #finalButtons { margin-top: 20px; }
     #descriptionText { margin: 15px 0; background: rgba(255,255,255,0.1); padding: 10px; border-radius: 12px; display: none; }
+    #timeBarContainer { width: 100%; height: 15px; background: #555; border-radius: 8px; margin: 10px 0; overflow: hidden; }
+    #timeBar { width: 100%; height: 100%; background: #4caf50; transition: width 1s linear, background-color 0.5s; }
   </style>
 </head>
 <body>
@@ -39,6 +41,7 @@
     </div>
     <div id="gameArea" style="display:none;">
       <div>남은 시간: <span id="timer">180</span>초</div>
+      <div id="timeBarContainer"><div id="timeBar"></div></div>
       <div id="hint">힌트가 여기에 표시됩니다</div>
       <input type="text" id="guessInput" placeholder="정답을 입력하세요" onkeydown="if(event.key==='Enter') checkAnswer()">
       <button onclick="checkAnswer()">제출</button>
@@ -79,6 +82,7 @@
     const finalButtons = document.getElementById('finalButtons');
     const descriptionText = document.getElementById('descriptionText');
     const timerDisplay = document.getElementById('timer');
+    const timeBar = document.getElementById('timeBar');
     const body = document.body;
 
     function startGame() {
@@ -88,16 +92,30 @@
       score = 0;
       currentIndex = 0;
       timeLeft = 180;
+      updateTimeBar();
       timerDisplay.textContent = timeLeft;
       timerInterval = setInterval(() => {
         timeLeft--;
         timerDisplay.textContent = timeLeft;
+        updateTimeBar();
         if (timeLeft <= 0) {
           clearInterval(timerInterval);
           endGame();
         }
       }, 1000);
       loadProblem();
+    }
+
+    function updateTimeBar() {
+      const percent = (timeLeft / 180) * 100;
+      timeBar.style.width = percent + '%';
+      if (percent > 60) {
+        timeBar.style.backgroundColor = '#4caf50'; // 초록
+      } else if (percent > 30) {
+        timeBar.style.backgroundColor = '#ff9800'; // 주황
+      } else {
+        timeBar.style.backgroundColor = '#f44336'; // 빨강
+      }
     }
 
     function showDescription() {
