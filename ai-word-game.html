@@ -1,4 +1,4 @@
-<!-- ai-word-game.html: 게임 종료 후 랭킹 순위 표시 추가 -->
+<!-- ai-word-game.html: 게임 종료 후 점수와 순위를 다시 시작 버튼 위에 표시 -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -17,7 +17,8 @@
     button { width: 90%; background: linear-gradient(135deg, #00c6ff, #0072ff); color: #fff; font-weight: 600; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
     button:hover { transform: scale(1.05); box-shadow: 0 8px 20px rgba(0, 114, 255, 0.5); }
     #result { font-size: 1.2em; margin-top: 15px; font-weight: bold; min-height: 1.5em; }
-    #finalButtons { margin-top: 25px; }
+    #finalButtons { margin-top: 20px; }
+    #endMessage { font-size: 1.3em; margin-bottom: 15px; }
     #descriptionText { margin: 15px 0; background: rgba(255,255,255,0.1); padding: 12px; border-radius: 14px; display: none; text-align: left; font-size: 0.9em; }
     #timeBarContainer { width: 100%; height: 18px; background: #333; border-radius: 10px; margin: 15px 0; overflow: hidden; }
     #timeBar { width: 100%; height: 100%; background: #4caf50; transition: width 1s linear, background-color 0.5s; }
@@ -38,7 +39,8 @@
         - AI가 문제당 최대 3개의 힌트를 순차적으로 제공합니다.<br>
         - 각 문제당 최대 3회 시도, 시도 횟수에 따라 점수 차등 부여 (25점, 15점, 5점)<br>
         - 3회 모두 실패 시 정답 공개 후 다음 문제 진행<br>
-        - 제한 시간이 끝나면 즉시 게임 종료 및 최종 점수 공개
+        - 제한 시간이 끝나면 즉시 게임 종료 및 최종 점수 공개<br>
+        - 게임 종료 후 메인으로 돌아가기 또는 재시작 버튼 제공
       </div>
     </div>
     <div id="gameArea" style="display:none;">
@@ -50,7 +52,11 @@
       <div id="scoreBoard">점수: 0점</div>
       <div id="result"></div>
       <div id="attempts">남은 시도: 3회</div>
-      <div id="finalButtons" style="display:none;">
+    </div>
+    <div id="endArea" style="display:none;">
+      <div id="endMessage"></div>
+      <div id="finalButtons">
+        <button onclick="startGame()">다시 시작</button>
         <button onclick="goBack()">메인으로 돌아가기</button>
       </div>
     </div>
@@ -81,7 +87,8 @@
     const attemptsDiv = document.getElementById('attempts');
     const gameExplanation = document.getElementById('gameExplanation');
     const gameArea = document.getElementById('gameArea');
-    const finalButtons = document.getElementById('finalButtons');
+    const endArea = document.getElementById('endArea');
+    const endMessage = document.getElementById('endMessage');
     const descriptionText = document.getElementById('descriptionText');
     const timerDisplay = document.getElementById('timer');
     const timeBar = document.getElementById('timeBar');
@@ -90,7 +97,7 @@
     function startGame() {
       gameExplanation.style.display = 'none';
       gameArea.style.display = 'block';
-      finalButtons.style.display = 'none';
+      endArea.style.display = 'none';
       score = 0;
       currentIndex = 0;
       timeLeft = 180;
@@ -181,6 +188,8 @@
 
     function endGame() {
       clearInterval(timerInterval);
+      gameArea.style.display = 'none';
+      endArea.style.display = 'block';
       saveScoreAndShowRank();
     }
 
@@ -205,9 +214,8 @@
           });
           allScores.sort((a, b) => b - a);
           const rank = allScores.indexOf(score) + 1;
-          resultDiv.innerHTML = `<span style='color: gold;'>게임 종료! 최종 점수: ${score}점 (현재 ${rank}위)</span>`;
+          endMessage.innerHTML = `<span style='color: gold;'>최종 점수: ${score}점<br>현재 순위: ${rank}위</span>`;
           flashEffect('#ffd700');
-          finalButtons.style.display = 'block';
         });
       });
     }
