@@ -1,10 +1,12 @@
-<!-- ai-word-game.html: 종료 화면에서 점수와 순위가 확실히 보이도록 수정 -->
+<!-- ai-word-game.html: 종료 화면에서 점수와 순위가 확실히 보이도록 + Firebase 점수 기록 추가 -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>디버그 동아리 | AI 단어 설명 게임</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
   <style>
     body { font-family: 'Poppins', sans-serif; background: radial-gradient(circle at top left, #1c1c1c, #2b5876, #4e4376); margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; color: #fff; }
     .container { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(20px); width: 90%; max-width: 600px; padding: 40px; border-radius: 20px; box-shadow: 0 15px 40px rgba(0,0,0,0.5); text-align: center; animation: fadeIn 1s ease; }
@@ -60,6 +62,18 @@
   </div>
 
   <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDwk8QF3jJMzk30QeJR_kFTq6gQXGmoiG4",
+      authDomain: "debug-games-hub.firebaseapp.com",
+      projectId: "debug-games-hub",
+      storageBucket: "debug-games-hub.firebasestorage.app",
+      messagingSenderId: "391096300170",
+      appId: "1:391096300170:web:156898c1574c15fca9f373"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+
     const problems = [
       { answer: "의자", hints: ["앉을 수 있음", "네 다리", "책상 옆에 있음"] },
       { answer: "토끼", hints: ["귀가 긺", "풀을 먹음", "깡총깡총"] }
@@ -177,6 +191,21 @@
       gameArea.style.display = 'none';
       endArea.style.display = 'block';
       finalScoreBox.innerHTML = `🎉 최종 점수: ${score}점`;
+      saveScoreToFirebase(score);
+    }
+
+    function saveScoreToFirebase(score) {
+      if (!currentUser) return;
+      const entry = {
+        id: currentUser.id,
+        name: currentUser.name,
+        game: 'AI 단어 설명 게임',
+        score: score,
+        timestamp: Date.now()
+      };
+      db.ref('rankings').push(entry)
+        .then(() => console.log('점수 저장 성공'))
+        .catch(error => console.error('점수 저장 실패', error));
     }
 
     function goBack() {
