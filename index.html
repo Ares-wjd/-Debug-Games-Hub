@@ -1,4 +1,4 @@
-<!-- index.html: Firebase로 로그인 상태 및 데이터 완전 이관 -->
+<!-- index.html: 관리자 전용 기능 복원 및 Firebase 연동 -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -24,6 +24,7 @@
     .ranking-list { margin-top: 20px; text-align: left; background: rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 16px; }
     .ranking-list div { padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.2); }
     .ranking-list div:last-child { border-bottom: none; }
+    .admin-panel { background: rgba(255,255,255,0.1); padding: 20px; border-radius: 16px; margin-top: 20px; text-align: left; }
   </style>
 </head>
 <body>
@@ -53,6 +54,12 @@
         <h3>전체 합산 랭킹</h3>
         <div class="ranking-list" id="totalRanking"></div>
       </div>
+
+      <div id="adminPanel" class="hidden admin-panel">
+        <h3>관리자 전용 기능</h3>
+        <button onclick="resetAllData()" style="background: linear-gradient(135deg, #ff8c00, #ff0080);">⚠️ 모든 데이터 초기화</button>
+        <div id="adminInfo"></div>
+      </div>
     </div>
   </div>
 
@@ -81,12 +88,17 @@
       document.getElementById('loginSection').classList.add('hidden');
       document.getElementById('menuSection').classList.remove('hidden');
       document.getElementById('userInfo').textContent = (id === '7410' && name.toLowerCase() === 'admin') ? `환영합니다, 관리자님!` : `환영합니다, ${name} (${id})님!`;
+      if (id === '7410' && name.toLowerCase() === 'admin') {
+        document.getElementById('adminPanel').classList.remove('hidden');
+        loadAdminData();
+      }
     }
 
     function logout() {
       currentUser = null;
       document.getElementById('menuSection').classList.add('hidden');
       document.getElementById('loginSection').classList.remove('hidden');
+      document.getElementById('adminPanel').classList.add('hidden');
     }
 
     function goToGame(page) {
@@ -125,10 +137,25 @@
       rankingSection.classList.toggle('hidden');
     }
 
-    window.onload = () => {
-      // Firebase에 기록된 마지막 로그인 정보 자동 불러오기 (선택적으로 사용 가능)
-      // 현재는 세션 유지 없이 새로 로그인하도록 설계됨
-    };
+    function loadAdminData() {
+      const adminInfo = document.getElementById('adminInfo');
+      db.ref('users').once('value').then(snapshot => {
+        const users = snapshot.val();
+        let html = '<strong>사용자 목록:</strong><br>';
+        Object.entries(users).forEach(([id, user]) => {
+          html += `🔹 ${user.name} (${id})<br>`;
+        });
+        adminInfo.innerHTML = html;
+      });
+    }
+
+    function resetAllData() {
+      if (confirm('⚠️ 정말로 모든 데이터를 초기화하시겠습니까?')) {
+        db.ref('rankings').remove();
+        db.ref('users').remove();
+        alert('모든 데이터가 초기화되었습니다.');
+      }
+    }
   </script>
 </body>
 </html>
