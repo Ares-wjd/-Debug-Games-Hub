@@ -1,4 +1,4 @@
-<!-- index.html: Firebase 연동 버전 -->
+<!-- index.html: Firebase로 로그인 상태 및 데이터 완전 이관 -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -13,7 +13,7 @@
     .container { background: rgba(255, 255, 255, 0.07); backdrop-filter: blur(15px); width: 90%; max-width: 700px; padding: 50px; border-radius: 24px; box-shadow: 0 12px 40px rgba(0,0,0,0.5); text-align: center; transition: transform 0.3s; }
     .container:hover { transform: translateY(-5px); }
     h1 { margin-bottom: 10px; font-size: 2.5rem; letter-spacing: 2px; }
-    .logo img { width: 100px; height: 100px; margin-bottom: 20px; border-radius: 50%; box-shadow: 0 4px 15px rgba(0,0,0,0.4); object-fit: cover; }
+    .logo img { width: 100px; height: 100px; margin-bottom: 20px; border-radius: 50%; object-fit: cover; }
     input, button { width: 100%; padding: 14px; margin: 12px 0; font-size: 1em; border: none; border-radius: 12px; outline: none; }
     input { background: rgba(255, 255, 255, 0.1); color: #fff; border: 1px solid rgba(255,255,255,0.3); }
     input::placeholder { color: rgba(255,255,255,0.6); }
@@ -24,8 +24,6 @@
     .ranking-list { margin-top: 20px; text-align: left; background: rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 16px; }
     .ranking-list div { padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.2); }
     .ranking-list div:last-child { border-bottom: none; }
-    .admin-panel { background: rgba(255, 255, 255, 0.1); padding: 20px; border-radius: 16px; margin-top: 20px; text-align: left; }
-    .admin-panel h4 { margin: 10px 0; }
   </style>
 </head>
 <body>
@@ -69,6 +67,7 @@
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
+    let currentUser = null;
 
     function login() {
       const id = document.getElementById('studentId').value.trim();
@@ -77,19 +76,25 @@
         alert('학번과 이름을 모두 입력해주세요.');
         return;
       }
-      localStorage.setItem('currentUser', JSON.stringify({ id, name }));
+      currentUser = { id, name };
+      db.ref('users/' + id).set(currentUser);
       document.getElementById('loginSection').classList.add('hidden');
       document.getElementById('menuSection').classList.remove('hidden');
       document.getElementById('userInfo').textContent = (id === '7410' && name.toLowerCase() === 'admin') ? `환영합니다, 관리자님!` : `환영합니다, ${name} (${id})님!`;
     }
 
     function logout() {
-      localStorage.removeItem('currentUser');
+      currentUser = null;
       document.getElementById('menuSection').classList.add('hidden');
       document.getElementById('loginSection').classList.remove('hidden');
     }
 
     function goToGame(page) {
+      if (!currentUser) {
+        alert('로그인이 필요합니다.');
+        return;
+      }
+      sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
       window.location.href = `/-Debug-Games-Hub/${page}`;
     }
 
@@ -121,12 +126,8 @@
     }
 
     window.onload = () => {
-      const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-      if (currentUser) {
-        document.getElementById('loginSection').classList.add('hidden');
-        document.getElementById('menuSection').classList.remove('hidden');
-        document.getElementById('userInfo').textContent = (currentUser.id === '7410' && currentUser.name.toLowerCase() === 'admin') ? `환영합니다, 관리자님!` : `환영합니다, ${currentUser.name} (${currentUser.id})님!`;
-      }
+      // Firebase에 기록된 마지막 로그인 정보 자동 불러오기 (선택적으로 사용 가능)
+      // 현재는 세션 유지 없이 새로 로그인하도록 설계됨
     };
   </script>
 </body>
