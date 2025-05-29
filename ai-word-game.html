@@ -1,4 +1,4 @@
-<!-- ai-word-game.html: 제한 시간 막대 UI 추가 -->
+<!-- ai-word-game.html: 전체 UI 디자인 개선 -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -8,24 +8,27 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
   <style>
-    body { font-family: 'Poppins', sans-serif; background: linear-gradient(135deg, #0f2027, #203a43, #2c5364); margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; color: #fff; transition: background-color 0.3s; }
-    .container { background: rgba(255, 255, 255, 0.07); backdrop-filter: blur(15px); width: 90%; max-width: 600px; padding: 30px; border-radius: 16px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); text-align: center; }
-    input, button { padding: 12px; margin: 10px 0; font-size: 1em; border-radius: 8px; border: none; }
-    input { width: 80%; }
-    button { background: linear-gradient(135deg, #ff416c, #ff4b2b); color: #fff; cursor: pointer; }
-    button:hover { transform: scale(1.05); }
-    #result { font-size: 1.2em; margin-top: 10px; font-weight: bold; }
-    #finalButtons { margin-top: 20px; }
-    #descriptionText { margin: 15px 0; background: rgba(255,255,255,0.1); padding: 10px; border-radius: 12px; display: none; }
-    #timeBarContainer { width: 100%; height: 15px; background: #555; border-radius: 8px; margin: 10px 0; overflow: hidden; }
+    body { font-family: 'Poppins', sans-serif; background: radial-gradient(circle at top left, #1c1c1c, #2b5876, #4e4376); margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; color: #fff; }
+    .container { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(20px); width: 90%; max-width: 600px; padding: 40px; border-radius: 20px; box-shadow: 0 15px 40px rgba(0,0,0,0.5); text-align: center; animation: fadeIn 1s ease; }
+    h1 { font-size: 2.5rem; margin-bottom: 20px; letter-spacing: 1px; }
+    input, button { padding: 14px; margin: 10px 0; font-size: 1em; border-radius: 12px; border: none; }
+    input { width: 85%; background: rgba(255, 255, 255, 0.2); color: #fff; border: 1px solid rgba(255,255,255,0.3); }
+    input::placeholder { color: rgba(255,255,255,0.6); }
+    button { width: 90%; background: linear-gradient(135deg, #00c6ff, #0072ff); color: #fff; font-weight: 600; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+    button:hover { transform: scale(1.05); box-shadow: 0 8px 20px rgba(0, 114, 255, 0.5); }
+    #result { font-size: 1.2em; margin-top: 15px; font-weight: bold; min-height: 1.5em; }
+    #finalButtons { margin-top: 25px; }
+    #descriptionText { margin: 15px 0; background: rgba(255,255,255,0.1); padding: 12px; border-radius: 14px; display: none; text-align: left; font-size: 0.9em; }
+    #timeBarContainer { width: 100%; height: 18px; background: #333; border-radius: 10px; margin: 15px 0; overflow: hidden; }
     #timeBar { width: 100%; height: 100%; background: #4caf50; transition: width 1s linear, background-color 0.5s; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>🤖 AI 단어 설명 게임</h1>
     <div id="gameExplanation">
-      <p>AI가 하나씩 설명을 추가하며 정답을 맞히게 됩니다.<br>게임을 시작하거나 게임 설명을 보려면 버튼을 눌러주세요.</p>
+      <p>AI가 힌트를 하나씩 주며 정답을 맞히게 됩니다. 아래 버튼을 눌러 시작하거나 게임 설명을 확인하세요.</p>
       <button onclick="startGame()">게임 시작</button>
       <button onclick="showDescription()">게임 설명 보기</button>
       <button onclick="goBack()">메인으로 돌아가기</button>
@@ -33,16 +36,15 @@
         <strong>게임 설명:</strong><br>
         - 제한 시간: 180초<br>
         - AI가 문제당 최대 3개의 힌트를 순차적으로 제공합니다.<br>
-        - 한 문제당 3회까지 정답을 시도할 수 있으며, 시도 횟수에 따라 점수가 다릅니다.<br>
-        (첫 시도: 25점, 두 번째 시도: 15점, 세 번째 시도: 5점)<br>
-        - 3회 모두 틀리면 정답이 공개되고 다음 문제로 넘어갑니다.<br>
-        - 시간이 종료되면 즉시 게임이 중단되고 최종 점수가 공개됩니다.
+        - 각 문제당 최대 3회 시도, 시도 횟수에 따라 점수 차등 부여 (25점, 15점, 5점)<br>
+        - 3회 모두 실패 시 정답 공개 후 다음 문제 진행<br>
+        - 제한 시간이 끝나면 즉시 게임 종료 및 최종 점수 공개
       </div>
     </div>
     <div id="gameArea" style="display:none;">
-      <div>남은 시간: <span id="timer">180</span>초</div>
+      <div>⏰ 남은 시간: <span id="timer">180</span>초</div>
       <div id="timeBarContainer"><div id="timeBar"></div></div>
-      <div id="hint">힌트가 여기에 표시됩니다</div>
+      <div id="hint" style="margin: 15px 0; font-size: 1.1em;">힌트가 여기에 표시됩니다</div>
       <input type="text" id="guessInput" placeholder="정답을 입력하세요" onkeydown="if(event.key==='Enter') checkAnswer()">
       <button onclick="checkAnswer()">제출</button>
       <div id="scoreBoard">점수: 0점</div>
@@ -110,11 +112,11 @@
       const percent = (timeLeft / 180) * 100;
       timeBar.style.width = percent + '%';
       if (percent > 60) {
-        timeBar.style.backgroundColor = '#4caf50'; // 초록
+        timeBar.style.backgroundColor = '#4caf50';
       } else if (percent > 30) {
-        timeBar.style.backgroundColor = '#ff9800'; // 주황
+        timeBar.style.backgroundColor = '#ff9800';
       } else {
-        timeBar.style.backgroundColor = '#f44336'; // 빨강
+        timeBar.style.backgroundColor = '#f44336';
       }
     }
 
