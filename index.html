@@ -1,11 +1,10 @@
-<!-- index.html: Firebase 연동 버전 -->
+<!-- index.html: 메인 페이지에서 Firebase에서 직접 랭킹 불러오기 -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Debug Games Hub | 메인 페이지</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet">
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
   <style>
@@ -13,19 +12,12 @@
     .container { background: rgba(255, 255, 255, 0.07); backdrop-filter: blur(15px); width: 90%; max-width: 700px; padding: 50px; border-radius: 24px; box-shadow: 0 12px 40px rgba(0,0,0,0.5); text-align: center; transition: transform 0.3s; }
     .container:hover { transform: translateY(-5px); }
     h1 { margin-bottom: 10px; font-size: 2.5rem; letter-spacing: 2px; }
-    .logo img { width: 100px; height: 100px; margin-bottom: 20px; border-radius: 50%; box-shadow: 0 4px 15px rgba(0,0,0,0.4); object-fit: cover; }
-    input, button { width: 100%; padding: 14px; margin: 12px 0; font-size: 1em; border: none; border-radius: 12px; outline: none; }
-    input { background: rgba(255, 255, 255, 0.1); color: #fff; border: 1px solid rgba(255,255,255,0.3); }
-    input::placeholder { color: rgba(255,255,255,0.6); }
-    button { background: linear-gradient(135deg, #ff416c, #ff4b2b); color: #fff; font-weight: 600; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+    .logo img { width: 100px; height: 100px; margin-bottom: 20px; border-radius: 50%; object-fit: cover; }
+    button { width: 90%; padding: 14px; margin: 12px 0; font-size: 1em; border: none; border-radius: 12px; background: linear-gradient(135deg, #ff416c, #ff4b2b); color: #fff; font-weight: 600; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
     button:hover { transform: scale(1.05); box-shadow: 0 6px 20px rgba(255,75,43,0.5); }
-    .hidden { display: none; }
-    .note { font-size: 0.9rem; margin-bottom: 15px; color: #ffd700; }
-    .ranking-list { margin-top: 20px; text-align: left; background: rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 16px; }
-    .ranking-list div { padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.2); }
-    .ranking-list div:last-child { border-bottom: none; }
-    .admin-panel { background: rgba(255, 255, 255, 0.1); padding: 20px; border-radius: 16px; margin-top: 20px; text-align: left; }
-    .admin-panel h4 { margin: 10px 0; }
+    #rankingList { margin-top: 20px; background: rgba(255,255,255,0.1); padding: 15px; border-radius: 16px; text-align: left; }
+    #rankingList div { padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.2); }
+    #rankingList div:last-child { border-bottom: none; }
   </style>
 </head>
 <body>
@@ -33,29 +25,13 @@
     <div class="logo">
       <img src="images/logo.png" alt="Debug Games Hub Logo">
     </div>
-    <div id="loginSection">
-      <h1>Debug Games Hub</h1>
-      <div class="note">예: 학생 → 학번 1101 / 선생님 → 학번 0000</div>
-      <input type="text" id="studentId" placeholder="학번 (예: 1101, 0000)" />
-      <input type="text" id="studentName" placeholder="이름" />
-      <button onclick="login()">로그인</button>
-    </div>
-
-    <div id="menuSection" class="hidden">
-      <div class="user-info" id="userInfo"></div>
-      <h2>게임 선택</h2>
-      <button onclick="goToGame('ai-word-game.html')">🤖 AI 단어 설명 게임</button>
-      <button onclick="goToGame('memory-card-game.html')">🧠 기억력 카드 게임</button>
-      <button onclick="goToGame('programming-quiz.html')">💻 프로그래밍 퀴즈 게임</button>
-      <button onclick="goToGame('typing-speed-test.html')">⌨️ 타자 속도 테스트 게임</button>
-      <button onclick="showRanking()">🏆 랭킹 보기</button>
-      <button onclick="logout()" style="background: linear-gradient(135deg, #43cea2, #185a9d); margin-top:20px;">🚪 로그아웃</button>
-
-      <div id="rankingSection" class="hidden">
-        <h3>전체 합산 랭킹</h3>
-        <div class="ranking-list" id="totalRanking"></div>
-      </div>
-    </div>
+    <h1>Debug Games Hub</h1>
+    <button onclick="goToGame('ai-word-game.html')">🤖 AI 단어 설명 게임</button>
+    <button onclick="goToGame('memory-card-game.html')">🧠 기억력 카드 게임</button>
+    <button onclick="goToGame('programming-quiz.html')">💻 프로그래밍 퀴즈 게임</button>
+    <button onclick="goToGame('typing-speed-test.html')">⌨️ 타자 속도 테스트 게임</button>
+    <button onclick="showRanking()">🏆 전체 및 게임별 랭킹 보기</button>
+    <div id="rankingList" style="display:none;"></div>
   </div>
 
   <script>
@@ -70,64 +46,60 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    function login() {
-      const id = document.getElementById('studentId').value.trim();
-      const name = document.getElementById('studentName').value.trim();
-      if (!id || !name) {
-        alert('학번과 이름을 모두 입력해주세요.');
-        return;
-      }
-      localStorage.setItem('currentUser', JSON.stringify({ id, name }));
-      document.getElementById('loginSection').classList.add('hidden');
-      document.getElementById('menuSection').classList.remove('hidden');
-      document.getElementById('userInfo').textContent = (id === '7410' && name.toLowerCase() === 'admin') ? `환영합니다, 관리자님!` : `환영합니다, ${name} (${id})님!`;
-    }
-
-    function logout() {
-      localStorage.removeItem('currentUser');
-      document.getElementById('menuSection').classList.add('hidden');
-      document.getElementById('loginSection').classList.remove('hidden');
-    }
-
     function goToGame(page) {
       window.location.href = `/-Debug-Games-Hub/${page}`;
     }
 
     function showRanking() {
-      const rankingSection = document.getElementById('rankingSection');
-      const totalRanking = document.getElementById('totalRanking');
-      totalRanking.innerHTML = '';
+      const rankingDiv = document.getElementById('rankingList');
+      rankingDiv.style.display = rankingDiv.style.display === 'none' ? 'block' : 'none';
+      if (rankingDiv.innerHTML.trim() !== '') return; // 이미 불러온 경우 재요청 방지
 
-      db.ref('rankings').once('value').then(snapshot => {
+      db.ref('/rankings').once('value', snapshot => {
         const data = snapshot.val();
         if (!data) {
-          totalRanking.innerHTML = '<div>랭킹 데이터가 없습니다.</div>';
+          rankingDiv.innerHTML = '<div>랭킹 데이터가 없습니다.</div>';
           return;
         }
-        const rankingArray = Object.values(data);
+
         const userScores = {};
-        rankingArray.forEach(entry => {
-          if (!userScores[entry.id] || userScores[entry.id] < entry.score) {
-            userScores[entry.id] = { name: entry.name, score: entry.score };
+        Object.values(data).forEach(entry => {
+          if (!userScores[entry.id]) userScores[entry.id] = { name: entry.name, scores: {}, total: 0 };
+          if (!userScores[entry.id].scores[entry.game] || userScores[entry.id].scores[entry.game] < entry.score) {
+            userScores[entry.id].scores[entry.game] = entry.score;
           }
         });
-        const sorted = Object.entries(userScores).sort((a, b) => b[1].score - a[1].score);
-        sorted.slice(0, 5).forEach(([id, info], index) => {
-          totalRanking.innerHTML += `<div>${index + 1}위 - ${info.name} (${id}): ${info.score}점</div>`;
+        for (const user of Object.values(userScores)) {
+          user.total = Object.values(user.scores).reduce((a, b) => a + b, 0);
+        }
+        const sorted = Object.entries(userScores).sort((a, b) => b[1].total - a[1].total);
+
+        let html = '<strong>전체 합산 랭킹 (게임별 최고점 합산)</strong><br>';
+        sorted.slice(0, 5).forEach(([id, data], idx) => {
+          html += `${idx + 1}위 - ${data.name} (${id}): ${data.total}점<br>`;
         });
+        html += '<br><strong>게임별 랭킹</strong><br>';
+
+        const games = [...new Set(Object.values(data).map(e => e.game))];
+        games.forEach(game => {
+          html += `<em>${game}</em><br>`;
+          const gameEntries = Object.values(data).filter(e => e.game === game);
+          const topPlayers = {};
+          gameEntries.forEach(e => {
+            if (!topPlayers[e.id] || topPlayers[e.id].score < e.score) {
+              topPlayers[e.id] = { name: e.name, score: e.score };
+            }
+          });
+          const sortedGame = Object.entries(topPlayers).sort((a, b) => b[1].score - a[1].score);
+          sortedGame.slice(0, 5).forEach(([id, d], i) => {
+            html += `${i + 1}위 - ${d.name} (${id}): ${d.score}점<br>`;
+          });
+          html += '<br>';
+        });
+
+        rankingDiv.innerHTML = html;
       });
-
-      rankingSection.classList.toggle('hidden');
     }
-
-    window.onload = () => {
-      const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-      if (currentUser) {
-        document.getElementById('loginSection').classList.add('hidden');
-        document.getElementById('menuSection').classList.remove('hidden');
-        document.getElementById('userInfo').textContent = (currentUser.id === '7410' && currentUser.name.toLowerCase() === 'admin') ? `환영합니다, 관리자님!` : `환영합니다, ${currentUser.name} (${currentUser.id})님!`;
-      }
-    };
   </script>
 </body>
 </html>
