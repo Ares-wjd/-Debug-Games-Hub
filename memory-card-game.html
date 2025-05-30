@@ -1,4 +1,4 @@
-<!-- memory_card_game.html: 기억력 카드 게임 (좌우 반전 문제 해결, 디자인 업그레이드) -->
+<!-- memory_card_game.html: 기억력 카드 게임 (랭킹 등록 문제 해결 및 디자인 업그레이드) -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -60,11 +60,7 @@
       transition: transform 0.4s;
     }
     .card-content {
-      transform: rotateY(0deg);
       backface-visibility: hidden;
-    }
-    .card.flipped .card-content {
-      transform: rotateY(0deg);
     }
     .card.matched {
       background: #4caf50;
@@ -113,6 +109,7 @@
   <button id="mainButton" style="display:none;" onclick="goToMain()">메인 화면으로</button>
 
   <script>
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
     let stage = 1;
     let score = 0;
     let timeLeft;
@@ -229,8 +226,20 @@
           timeUp = true;
           document.getElementById('message').textContent = `시간 초과! 최종 점수: ${score}점`;
           document.getElementById('mainButton').style.display = 'block';
+          saveScoreLocal('기억력 카드 게임', score);
         }
       }, 1000);
+    }
+
+    function saveScoreLocal(gameName, score) {
+      if (!currentUser) {
+        console.warn('로그인 정보 없음, 점수 저장 생략');
+        return;
+      }
+      const allData = JSON.parse(localStorage.getItem('allGameRankings') || '[]');
+      allData.push({ id: currentUser.id, name: currentUser.name, game: gameName, score: score, timestamp: Date.now() });
+      localStorage.setItem('allGameRankings', JSON.stringify(allData));
+      console.log('점수 localStorage에 저장 완료');
     }
 
     function goToMain() {
