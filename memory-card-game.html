@@ -1,4 +1,4 @@
-<!-- memory_card_game.html: 기억력 카드 게임 (시간 초과 후 카드 잠금, 디자인 유지) -->
+<!-- memory_card_game.html: 기억력 카드 게임 (좌우 반전 문제 해결, 디자인 업그레이드) -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -22,7 +22,7 @@
       text-align: center;
     }
     header h1 {
-      font-size: 2em;
+      font-size: 2.4em;
       margin-bottom: 10px;
     }
     .info {
@@ -35,17 +35,18 @@
       padding: 10px 20px;
       border-radius: 12px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      font-size: 1em;
     }
     .game-board {
       display: grid;
-      gap: 10px;
+      gap: 12px;
       justify-content: center;
       align-content: center;
       margin-top: 20px;
     }
     .card {
-      width: 60px;
-      height: 80px;
+      width: 70px;
+      height: 90px;
       background: #bbb;
       border-radius: 12px;
       box-shadow: 0 4px 8px rgba(0,0,0,0.1);
@@ -55,19 +56,23 @@
       font-size: 1.5rem;
       cursor: pointer;
       user-select: none;
-      transition: transform 0.3s;
+      transform-style: preserve-3d;
+      transition: transform 0.4s;
     }
-    .card.flipped {
-      background: #fff;
-      transform: rotateY(180deg);
+    .card-content {
+      transform: rotateY(0deg);
+      backface-visibility: hidden;
+    }
+    .card.flipped .card-content {
+      transform: rotateY(0deg);
     }
     .card.matched {
-      background: #8bc34a;
+      background: #4caf50;
       color: #fff;
       cursor: default;
     }
     button {
-      margin: 10px;
+      margin: 8px;
       padding: 10px 20px;
       border: none;
       background: #2196f3;
@@ -75,10 +80,11 @@
       font-size: 1em;
       border-radius: 10px;
       cursor: pointer;
-      transition: background 0.3s;
+      transition: background 0.3s, transform 0.2s;
     }
     button:hover {
       background: #1976d2;
+      transform: scale(1.05);
     }
     #message {
       margin-top: 20px;
@@ -137,7 +143,7 @@
     function nextStage() {
       const gridSize = stage + 1;
       const totalPairs = Math.floor((gridSize * gridSize) / 2);
-      timeLeft = Math.max(5 + stage * 3, 10);
+      timeLeft = Math.max(10 + stage * 2, 15);
       document.getElementById('time').textContent = timeLeft;
 
       const board = document.getElementById('gameBoard');
@@ -154,7 +160,10 @@
       cards.forEach(num => {
         const card = document.createElement('div');
         card.className = 'card';
-        card.textContent = num;
+        const content = document.createElement('div');
+        content.className = 'card-content';
+        content.textContent = num;
+        card.appendChild(content);
         card.dataset.value = num;
         card.onclick = () => flipCard(card);
         board.appendChild(card);
@@ -162,8 +171,8 @@
 
       lockBoard = true;
       setTimeout(() => {
-        document.querySelectorAll('.card').forEach(card => {
-          card.textContent = '?';
+        document.querySelectorAll('.card-content').forEach(content => {
+          content.textContent = '?';
         });
         lockBoard = false;
         startTimer();
@@ -172,7 +181,7 @@
 
     function flipCard(card) {
       if (lockBoard || timeUp || card.classList.contains('matched') || card === firstCard) return;
-      card.textContent = card.dataset.value;
+      card.querySelector('.card-content').textContent = card.dataset.value;
 
       if (!firstCard) {
         firstCard = card;
@@ -196,8 +205,8 @@
           }
         } else {
           setTimeout(() => {
-            firstCard.textContent = '?';
-            secondCard.textContent = '?';
+            firstCard.querySelector('.card-content').textContent = '?';
+            secondCard.querySelector('.card-content').textContent = '?';
             resetSelection();
           }, 800);
         }
