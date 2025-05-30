@@ -1,4 +1,4 @@
-<!-- typing-speed-test.html: 타자 속도 테스트 게임 (입력 시 타이머 시작, 타수 및 정확도 표시, 보너스 점수 추가) -->
+<!-- typing-speed-test.html: 타자 속도 테스트 게임 (연속 문장 방지, 입력 시 타이머 시작, 타수 및 정확도 표시, 보너스 점수 추가) -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -60,6 +60,7 @@
     let timer;
     let timerStarted = false;
     let currentSentence = '';
+    let lastSentence = '';
     let totalTypedChars = 0;
     let totalCorrectChars = 0;
     let usedBackspace = false;
@@ -81,7 +82,12 @@
     }
 
     function nextSentence() {
-      currentSentence = sentences[Math.floor(Math.random() * sentences.length)];
+      let newSentence;
+      do {
+        newSentence = sentences[Math.floor(Math.random() * sentences.length)];
+      } while (newSentence === lastSentence);
+      lastSentence = newSentence;
+      currentSentence = newSentence;
       document.getElementById('inputArea').value = '';
       usedBackspace = false;
       updateHighlight();
@@ -91,7 +97,6 @@
 
     function handleInput() {
       if (!timerStarted) startTimer();
-      const inputEl = document.getElementById('inputArea');
       if (event.inputType === 'deleteContentBackward') {
         usedBackspace = true;
       }
