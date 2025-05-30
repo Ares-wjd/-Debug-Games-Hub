@@ -1,4 +1,4 @@
-<!-- index.html: Game Hub 메인 페이지 (관리자 비밀번호, 관리자 전용 전체 랭킹 및 사용자 기록 관리, 디자인 개선, 로고 복원) -->
+<!-- index.html: Game Hub 메인 페이지 (관리자 비밀번호, 관리자 전용 전체 기록, 일반용 상위 5명 랭킹, 디자인 개선, 로고 복원) -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -17,9 +17,9 @@
     button { background: linear-gradient(135deg, #ff416c, #ff4b2b); color: #fff; font-weight: 600; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
     button:hover { transform: scale(1.05); box-shadow: 0 6px 20px rgba(255,75,43,0.5); }
     .hidden { display: none; }
-    .admin-section { margin-top: 20px; background: rgba(255,255,255,0.1); padding: 15px; border-radius: 16px; text-align: left; }
+    .admin-section, .ranking-section { margin-top: 20px; background: rgba(255,255,255,0.1); padding: 15px; border-radius: 16px; text-align: left; }
     footer { margin-top: 40px; font-size: 0.9em; color: #bbb; }
-    #adminOutput { margin-top: 10px; max-height: 300px; overflow: auto; font-size: 0.9em; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 10px; }
+    #adminOutput, #userRankingOutput { margin-top: 10px; max-height: 300px; overflow: auto; font-size: 0.9em; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 10px; }
   </style>
 </head>
 <body>
@@ -29,8 +29,8 @@
     </div>
     <h1>Game Hub</h1>
     <div id="loginSection">
-      <input type="text" id="studentId" placeholder="학번 (예: 1101)" />
-      <input type="text" id="studentName" placeholder="이름" />
+      <input type="text" id="studentId" placeholder="학번 (예: 1101)">
+      <input type="text" id="studentName" placeholder="이름">
       <button onclick="login()">로그인</button>
     </div>
 
@@ -42,11 +42,17 @@
       <button onclick="location.href='typing_speed_test.html'">타자 속도 테스트 게임</button>
       <button onclick="logout()">🚪 로그아웃</button>
 
+      <div id="rankingSection" class="ranking-section hidden">
+        <h2>🏆 상위 5명 랭킹</h2>
+        <button onclick="showTopRankings()">상위 5명 보기</button>
+        <div id="userRankingOutput"></div>
+      </div>
+
       <div id="adminMenu" class="admin-section hidden">
         <h2>🔑 관리자 메뉴</h2>
-        <button onclick="showAllRankings()">전체 랭킹 보기</button>
+        <button onclick="showAllRankings()">전체 기록 보기</button>
         <button onclick="resetAllRankings()">랭킹 전체 초기화</button>
-        <button onclick="viewUserRecords()">사용자별 기록 확인 및 삭제</button>
+        <button onclick="viewUserRecords()">사용자별 기록 관리</button>
         <div id="adminOutput"></div>
       </div>
     </div>
@@ -93,8 +99,47 @@
           document.getElementById('adminMenu').classList.remove('hidden');
         } else {
           document.getElementById('userInfo').innerHTML = `환영합니다, ${currentUser.name} (${currentUser.id})님!`;
+          document.getElementById('rankingSection').classList.remove('hidden');
         }
       }
+    }
+
+    function showTopRankings() {
+      const allData = JSON.parse(localStorage.getItem('allGameRankings') || '[]');
+      if (allData.length === 0) {
+        document.getElementById('userRankingOutput').innerHTML = '데이터가 없습니다.';
+        return;
+      }
+      const userScores = {};
+      allData.forEach(entry => {
+        if (!userScores[entry.id]) userScores[entry.id] = { name: entry.name, scores: {}, total: 0 };
+        if (!userScores[entry.id].scores[entry.game] || userScores[entry.id].scores[entry.game] < entry.score) {
+          userScores[entry.id].scores[entry.game] = entry.score;
+        }
+      });
+      for (const user of Object.values(userScores)) {
+        user.total = Object.values(user.scores).reduce((a, b) => a + b, 0);
+      }
+      const sortedTotal = Object.entries(userScores).sort((a, b) => b[1].total - a[1].total);
+      let html = '<strong>합산 상위 5명:</strong><br>';
+      sortedTotal.slice(0, 5).forEach(([id, data], idx) => {
+        html += `${idx + 1}위 - ${data.name} (${id}): ${data.total}점<br>`;
+      });
+      const games = [...new Set(allData.map(e => e.game))];
+      games.forEach(game => {
+        html += `<br><strong>${game} 상위 5명:</strong><br>`;
+        const topPlayers = {};
+        allData.filter(e => e.game === game).forEach(entry => {
+          if (!topPlayers[entry.id] || topPlayers[entry.id].score < entry.score) {
+            topPlayers[entry.id] = { name: entry.name, score: entry.score };
+          }
+        });
+        const sortedGame = Object.entries(topPlayers).sort((a, b) => b[1].score - a[1].score);
+        sortedGame.slice(0, 5).forEach(([id, data], idx) => {
+          html += `${idx + 1}위 - ${data.name} (${id}): ${data.score}점<br>`;
+        });
+      });
+      document.getElementById('userRankingOutput').innerHTML = html;
     }
 
     function showAllRankings() {
@@ -103,9 +148,10 @@
         document.getElementById('adminOutput').innerHTML = '랭킹 데이터가 없습니다.';
         return;
       }
-      let html = '<strong>전체 랭킹 목록:</strong><br>';
-      allData.forEach((entry, index) => {
-        html += `${index + 1}. ${entry.name} (${entry.id}) - ${entry.game}: ${entry.score}점<br>`;
+      const sortedData = allData.sort((a, b) => b.score - a.score);
+      let html = '<strong>전체 기록 목록 (점수 순):</strong><br>';
+      sortedData.forEach((entry, index) => {
+        html += `${index + 1}. ${entry.name} (${entry.id}) - ${entry.game}: ${entry.score}점 (시간: ${new Date(entry.timestamp).toLocaleString()})<br>`;
       });
       document.getElementById('adminOutput').innerHTML = html;
     }
