@@ -1,29 +1,50 @@
-<!-- programming-quiz.html: 프로그래밍 퀴즈 게임 (localStorage 기반 점수 저장) -->
+<!-- programming_quiz.html: 프로그래밍 퀴즈 게임 (애니메이션 추가) -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>프로그래밍 퀴즈 게임</title>
+  <title>디버그 동아리 | 프로그래밍 퀴즈 게임</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
   <style>
-    body { font-family: sans-serif; background: linear-gradient(135deg, #1f4037, #99f2c8); color: #333; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-    .container { background: #fff; padding: 30px; border-radius: 16px; width: 90%; max-width: 600px; box-shadow: 0 12px 40px rgba(0,0,0,0.3); text-align: center; }
-    h1 { margin-bottom: 20px; }
+    body { font-family: 'Poppins', sans-serif; background: linear-gradient(135deg, #ece9e6, #ffffff); margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+    .container { background: #fff; width: 90%; max-width: 600px; padding: 20px; border-radius: 16px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); text-align: center; }
     button { padding: 10px; margin: 10px 0; border: none; border-radius: 8px; width: 100%; background: #4caf50; color: #fff; font-size: 1em; cursor: pointer; }
     button:hover { background: #43a047; }
+    #timeBarContainer { width: 100%; height: 18px; background: #ddd; border-radius: 10px; margin: 15px 0; overflow: hidden; }
+    #timeBar { width: 100%; height: 100%; background: #4caf50; transition: width 1s linear; }
     .hidden { display: none; }
-    #feedback { font-size: 1.2em; margin-top: 10px; }
+    .flash-correct { animation: flashGreen 0.5s; }
+    .flash-wrong { animation: flashRed 0.5s; }
+    @keyframes flashGreen { from { background-color: #c8e6c9; } to { background-color: #fff; } }
+    @keyframes flashRed { from { background-color: #ffcdd2; } to { background-color: #fff; } }
   </style>
 </head>
 <body>
-  <div class="container">
+  <div class="container" id="mainContainer">
     <h1>💻 프로그래밍 퀴즈 게임</h1>
-    <div id="quizArea">
+
+    <div id="startArea">
+      <p>게임을 시작하거나 설명을 확인하세요.</p>
+      <button onclick="startGame()">게임 시작</button>
+      <button onclick="showDescription()">게임 설명 보기</button>
+      <button onclick="goToMain()">메인으로 돌아가기</button>
+      <div id="description" class="hidden" style="margin-top:10px; text-align:left; font-size:0.9em;">
+        <strong>게임 설명:</strong><br>
+        - 제한 시간: 60초<br>
+        - 문제를 맞히면 기본 25점, 연속 2문제 +5점, 연속 3문제 +10점, 연속 4문제 이상 +15점 보너스<br>
+        - 시간 내 최대한 높은 점수를 기록하세요!
+      </div>
+    </div>
+
+    <div id="quizArea" class="hidden">
+      <div id="timeBarContainer"><div id="timeBar"></div></div>
       <p id="question"></p>
       <div id="options"></div>
       <p id="score">점수: 0</p>
       <p id="feedback"></p>
     </div>
+
     <div id="endArea" class="hidden">
       <h2>🎉 게임 종료</h2>
       <p id="finalScore"></p>
@@ -39,8 +60,39 @@
       { q: 'JS에서 배열의 길이를 구하는 속성은?', opts: ['size', 'length', 'count', 'total'], ans: 1 },
       { q: 'Python에서 반복문 키워드는?', opts: ['repeat', 'for', 'loop', 'whilefor'], ans: 1 },
     ];
-    let score = 0;
-    let currentIdx = 0;
+    let score = 0, currentIdx = 0, streak = 0, timeLeft = 60, timer;
+
+    function showDescription() {
+      const desc = document.getElementById('description');
+      desc.classList.toggle('hidden');
+    }
+
+    function startGame() {
+      document.getElementById('startArea').classList.add('hidden');
+      document.getElementById('quizArea').classList.remove('hidden');
+      document.getElementById('score').textContent = '점수: 0';
+      startTimer();
+      loadQuestion();
+    }
+
+    function startTimer() {
+      timer = setInterval(() => {
+        timeLeft--;
+        updateTimeBar();
+        if (timeLeft <= 0) {
+          clearInterval(timer);
+          endGame();
+        }
+      }, 1000);
+      updateTimeBar();
+    }
+
+    function updateTimeBar() {
+      const percent = (timeLeft / 60) * 100;
+      const timeBar = document.getElementById('timeBar');
+      timeBar.style.width = percent + '%';
+      timeBar.style.backgroundColor = percent > 60 ? '#4caf50' : percent > 30 ? '#ff9800' : '#f44336';
+    }
 
     function loadQuestion() {
       if (currentIdx >= questions.length) {
@@ -62,18 +114,31 @@
     function checkAnswer(selected) {
       const q = questions[currentIdx];
       const feedback = document.getElementById('feedback');
+      const container = document.getElementById('mainContainer');
+      let points = 25;
       if (selected === q.ans) {
-        score += 100;
-        feedback.textContent = '✅ 정답!';
+        streak++;
+        if (streak === 2) points += 5;
+        else if (streak === 3) points += 10;
+        else if (streak >= 4) points += 15;
+        score += points;
+        feedback.textContent = `✅ 정답! +${points}점 (연속 ${streak}회)`;
+        container.classList.add('flash-correct');
       } else {
+        streak = 0;
         feedback.textContent = '❌ 오답!';
+        container.classList.add('flash-wrong');
       }
       document.getElementById('score').textContent = `점수: ${score}`;
-      currentIdx++;
-      setTimeout(loadQuestion, 1000);
+      setTimeout(() => {
+        container.classList.remove('flash-correct', 'flash-wrong');
+        currentIdx++;
+        loadQuestion();
+      }, 800);
     }
 
     function endGame() {
+      clearInterval(timer);
       document.getElementById('quizArea').classList.add('hidden');
       document.getElementById('endArea').classList.remove('hidden');
       document.getElementById('finalScore').textContent = `최종 점수: ${score}점`;
