@@ -1,4 +1,4 @@
-<!-- index.html: Game Hub 메인 페이지 (관리자 비밀번호, 관리자 전용 전체 기록, 일반용 상위 5명 랭킹, 디자인 개선, 로고 복원) -->
+<!-- index.html: Game Hub 메인 페이지 (관리자 비밀번호, 관리자 전용 전체 기록, 일반용 상위 5명 랭킹, 사용자별 기록 개별 삭제 추가, 디자인 개선, 로고 복원) -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -173,9 +173,9 @@
       let html = '<strong>사용자별 기록:</strong><br>';
       users.forEach(id => {
         const userRecords = allData.filter(e => e.id === id);
-        html += `<u>${userRecords[0].name} (${id})</u> <button onclick="deleteUserRecords('${id}')">삭제</button><br>`;
+        html += `<u>${userRecords[0].name} (${id})</u> <button onclick="deleteUserRecords('${id}')">전체 삭제</button><br>`;
         userRecords.forEach(r => {
-          html += `&nbsp;&nbsp;- ${r.game}: ${r.score}점 (시간: ${new Date(r.timestamp).toLocaleString()})<br>`;
+          html += `&nbsp;&nbsp;- ${r.game}: ${r.score}점 (시간: ${new Date(r.timestamp).toLocaleString()}) <button onclick="deleteSingleRecord('${r.timestamp}')">삭제</button><br>`;
         });
       });
       document.getElementById('adminOutput').innerHTML = html;
@@ -186,6 +186,14 @@
       allData = allData.filter(e => e.id !== userId);
       localStorage.setItem('allGameRankings', JSON.stringify(allData));
       alert(`${userId} 사용자의 모든 기록이 삭제되었습니다.`);
+      viewUserRecords();
+    }
+
+    function deleteSingleRecord(timestamp) {
+      let allData = JSON.parse(localStorage.getItem('allGameRankings') || '[]');
+      allData = allData.filter(e => e.timestamp !== Number(timestamp));
+      localStorage.setItem('allGameRankings', JSON.stringify(allData));
+      alert('선택한 기록이 삭제되었습니다.');
       viewUserRecords();
     }
 
