@@ -314,7 +314,9 @@
     }
 
     function showDescription() {
-      descriptionText.style.display = descriptionText.style.display === 'none' ? 'block' : 'none';
+      // 기본 CSS에서 display가 'none'이므로 ''(빈 값)과 'none' 모두를 체크
+      const cur = descriptionText.style.display;
+      descriptionText.style.display = (cur === 'none' || cur === '') ? 'block' : 'none';
     }
 
     function loadProblem() {
