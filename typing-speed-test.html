@@ -61,8 +61,47 @@
     let timerStarted = false;
     let currentSentence = '';
     let lastSentence = '';
-    let totalTypedChars = 0;
-    let totalCorrectChars = 0;
+    // 자소 단위 계산을 위한 한글 분리 함수
+    function splitHangul(char) {
+      const HANGUL_START = 0xac00;
+      const HANGUL_END = 0xd7a3;
+
+      const INITIALS = [
+        'ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ',
+        'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ',
+      ];
+
+      const MEDIALS = [
+        'ㅏ', 'ㅐ', 'ㅑ', 'ㅒ', 'ㅓ', 'ㅔ', 'ㅕ', 'ㅖ', 'ㅗ', 'ㅘ', 'ㅙ', 'ㅚ',
+        'ㅛ', 'ㅜ', 'ㅝ', 'ㅞ', 'ㅟ', 'ㅠ', 'ㅡ', 'ㅢ', 'ㅣ',
+      ];
+
+      const FINALS = [
+        '', 'ㄱ', 'ㄲ', 'ㄳ', 'ㄴ', 'ㄵ', 'ㄶ', 'ㄷ', 'ㄹ', 'ㄺ', 'ㄻ', 'ㄼ', 'ㄽ',
+        'ㄾ', 'ㄿ', 'ㅀ', 'ㅁ', 'ㅂ', 'ㅄ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅊ', 'ㅋ',
+        'ㅌ', 'ㅍ', 'ㅎ',
+      ];
+
+      const code = char.charCodeAt(0);
+      if (code < HANGUL_START || code > HANGUL_END) return [char];
+
+      const offset = code - HANGUL_START;
+      const i = Math.floor(offset / 588);
+      const m = Math.floor((offset % 588) / 28);
+      const f = offset % 28;
+      return [INITIALS[i], MEDIALS[m], FINALS[f]].filter(Boolean);
+    }
+
+    function countJaso(str) {
+      let count = 0;
+      for (const ch of str) {
+        count += splitHangul(ch).length;
+      }
+      return count;
+    }
+
+    let totalTypedJaso = 0;
+    let totalCorrectJaso = 0;
     let usedBackspace = false;
 
     function prepareGame() {
@@ -77,6 +116,7 @@
       timer = setInterval(() => {
         timeLeft--;
         document.getElementById('timer').textContent = `남은 시간: ${timeLeft}초`;
+        updateCPM();
         if (timeLeft <= 0) endGame();
       }, 1000);
     }
@@ -118,7 +158,7 @@
     }
 
     function updateCPM() {
-      const charsTyped = totalTypedChars + document.getElementById('inputArea').value.length;
+      const charsTyped = totalTypedJaso + countJaso(document.getElementById('inputArea').value);
       const secondsElapsed = 60 - timeLeft;
       const cpm = secondsElapsed > 0 ? Math.round((charsTyped / secondsElapsed) * 60) : 0;
       document.getElementById('cpm').textContent = `현재 CPM: ${cpm}`;
@@ -126,14 +166,15 @@
 
     function checkInput() {
       const input = document.getElementById('inputArea').value.trim();
-      totalTypedChars += input.length;
-      let correctCount = 0;
+      const inputJaso = countJaso(input);
+      totalTypedJaso += inputJaso;
+      let correctJaso = 0;
       for (let i = 0; i < Math.min(input.length, currentSentence.length); i++) {
-        if (input[i] === currentSentence[i]) correctCount++;
+        if (input[i] === currentSentence[i]) correctJaso += countJaso(currentSentence[i]);
       }
-      totalCorrectChars += correctCount;
+      totalCorrectJaso += correctJaso;
 
-      const accuracy = input.length > 0 ? (correctCount / input.length) * 100 : 0;
+      const accuracy = inputJaso > 0 ? (correctJaso / inputJaso) * 100 : 0;
       if (input === currentSentence && accuracy === 100 && !usedBackspace) {
         score += 150;
         document.getElementById('result').textContent = '🌟 완벽 정답! +150점';
@@ -151,9 +192,9 @@
       clearInterval(timer);
       document.getElementById('gameArea').style.display = 'none';
       document.getElementById('endArea').style.display = 'block';
-      const accuracy = totalTypedChars > 0 ? ((totalCorrectChars / totalTypedChars) * 100).toFixed(2) : 0;
+      const accuracy = totalTypedJaso > 0 ? ((totalCorrectJaso / totalTypedJaso) * 100).toFixed(2) : 0;
       document.getElementById('finalScore').textContent = `최종 점수: ${score}점`;
-      document.getElementById('finalStats').textContent = `총 타수: ${totalTypedChars}타 | 정확도: ${accuracy}%`;
+      document.getElementById('finalStats').textContent = `총 타수: ${totalTypedJaso}타 | 정확도: ${accuracy}%`;
       saveScoreLocal('타자 속도 테스트 게임', score);
     }
 
