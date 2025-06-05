@@ -60,161 +60,161 @@
       &copy; 2025 Game Hub. All rights reserved.
     </footer>
   </div>
-
-  <script>
-    function login() {
-      const id = document.getElementById('studentId').value.trim();
-      const name = document.getElementById('studentName').value.trim();
-      if (!id || !name) {
-        alert('학번과 이름을 모두 입력해주세요.');
+<script src="verifyPassword.js"></script>
+<script>
+  async function login() {
+    const id = document.getElementById('studentId').value.trim();
+    const name = document.getElementById('studentName').value.trim();
+    if (!id || !name) {
+      alert('학번과 이름을 모두 입력해주세요.');
+      return;
+    }
+    if (id === 'admin' && name === 'admin') {
+      const password = prompt('관리자 비밀번호를 입력하세요:');
+      const valid = await verifyAdminPassword(password);
+      if (!valid) {
+        alert('비밀번호가 틀렸습니다.');
         return;
       }
-      if (id === 'admin' && name === 'admin') {
-        const password = prompt('관리자 비밀번호를 입력하세요:');
-        if (password !== '7410456') {
-          alert('비밀번호가 틀렸습니다.');
-          return;
-        }
-        localStorage.setItem('currentUser', JSON.stringify({ id, name, isAdmin: true }));
-        alert('관리자 계정으로 로그인했습니다.');
+      localStorage.setItem('currentUser', JSON.stringify({ id, name, isAdmin: true }));
+      alert('관리자 계정으로 로그인했습니다.');
+    } else {
+      localStorage.setItem('currentUser', JSON.stringify({ id, name, isAdmin: false }));
+    }
+    document.getElementById('loginSection').classList.add('hidden');
+    document.getElementById('menuSection').classList.remove('hidden');
+    updateUserInfo();
+  }
+
+  function logout() {
+    localStorage.removeItem('currentUser');
+    document.getElementById('menuSection').classList.add('hidden');
+    document.getElementById('loginSection').classList.remove('hidden');
+  }
+
+  function updateUserInfo() {
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    if (currentUser) {
+      if (currentUser.isAdmin) {
+        document.getElementById('userInfo').innerHTML = `환영합니다, 관리자님!`;
+        document.getElementById('adminMenu').classList.remove('hidden');
       } else {
-        localStorage.setItem('currentUser', JSON.stringify({ id, name, isAdmin: false }));
+        document.getElementById('userInfo').innerHTML = `환영합니다, ${currentUser.name} (${currentUser.id})님!`;
+        document.getElementById('rankingSection').classList.remove('hidden');
       }
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('studentId').addEventListener('keydown', e => {
+      if (e.key === 'Enter') document.getElementById('studentName').focus();
+    });
+    document.getElementById('studentName').addEventListener('keydown', e => {
+      if (e.key === 'Enter') login();
+    });
+  });
+
+  function showTopRankings() {
+    const allData = JSON.parse(localStorage.getItem('allGameRankings') || '[]');
+    if (allData.length === 0) {
+      document.getElementById('userRankingOutput').innerHTML = '데이터가 없습니다.';
+      return;
+    }
+    const userScores = {};
+    allData.forEach(entry => {
+      if (!userScores[entry.id]) userScores[entry.id] = { name: entry.name, scores: {}, total: 0 };
+      if (!userScores[entry.id].scores[entry.game] || userScores[entry.id].scores[entry.game] < entry.score) {
+        userScores[entry.id].scores[entry.game] = entry.score;
+      }
+    });
+    for (const user of Object.values(userScores)) {
+      user.total = Object.values(user.scores).reduce((a, b) => a + b, 0);
+    }
+    const sortedTotal = Object.entries(userScores).sort((a, b) => b[1].total - a[1].total);
+    let html = '<strong>합산 상위 5명:</strong><br>';
+    sortedTotal.slice(0, 5).forEach(([id, data], idx) => {
+      html += `${idx + 1}위 - ${data.name} (${id}): ${data.total}점<br>`;
+    });
+    const games = [...new Set(allData.map(e => e.game))];
+    games.forEach(game => {
+      html += `<br><strong>${game} 상위 5명:</strong><br>`;
+      const topPlayers = {};
+      allData.filter(e => e.game === game).forEach(entry => {
+        if (!topPlayers[entry.id] || topPlayers[entry.id].score < entry.score) {
+          topPlayers[entry.id] = { name: entry.name, score: entry.score };
+        }
+      });
+      const sortedGame = Object.entries(topPlayers).sort((a, b) => b[1].score - a[1].score);
+      sortedGame.slice(0, 5).forEach(([id, data], idx) => {
+        html += `${idx + 1}위 - ${data.name} (${id}): ${data.score}점<br>`;
+      });
+    });
+    document.getElementById('userRankingOutput').innerHTML = html;
+  }
+
+  function showAllRankings() {
+    const allData = JSON.parse(localStorage.getItem('allGameRankings') || '[]');
+    if (allData.length === 0) {
+      document.getElementById('adminOutput').innerHTML = '랭킹 데이터가 없습니다.';
+      return;
+    }
+    const sortedData = allData.sort((a, b) => b.score - a.score);
+    let html = '<strong>전체 기록 목록 (점수 순):</strong><br>';
+    sortedData.forEach((entry, index) => {
+      html += `${index + 1}. ${entry.name} (${entry.id}) - ${entry.game}: ${entry.score}점 (시간: ${new Date(entry.timestamp).toLocaleString()})<br>`;
+    });
+    document.getElementById('adminOutput').innerHTML = html;
+  }
+
+  function resetAllRankings() {
+    if (confirm('정말로 모든 랭킹 데이터를 초기화하시겠습니까?')) {
+      localStorage.removeItem('allGameRankings');
+      document.getElementById('adminOutput').innerHTML = '모든 랭킹 데이터가 초기화되었습니다.';
+    }
+  }
+
+  function viewUserRecords() {
+    const allData = JSON.parse(localStorage.getItem('allGameRankings') || '[]');
+    if (allData.length === 0) {
+      document.getElementById('adminOutput').innerHTML = '사용자 기록이 없습니다.';
+      return;
+    }
+    const users = [...new Set(allData.map(e => e.id))];
+    let html = '<strong>사용자별 기록:</strong><br>';
+    users.forEach(id => {
+      const userRecords = allData.filter(e => e.id === id);
+      html += `<u>${userRecords[0].name} (${id})</u> <button onclick="deleteUserRecords('${id}')">전체 삭제</button><br>`;
+      userRecords.forEach(r => {
+        html += `&nbsp;&nbsp;- ${r.game}: ${r.score}점 (시간: ${new Date(r.timestamp).toLocaleString()}) <button onclick="deleteSingleRecord('${r.timestamp}')">삭제</button><br>`;
+      });
+    });
+    document.getElementById('adminOutput').innerHTML = html;
+  }
+
+  function deleteUserRecords(userId) {
+    let allData = JSON.parse(localStorage.getItem('allGameRankings') || '[]');
+    allData = allData.filter(e => e.id !== userId);
+    localStorage.setItem('allGameRankings', JSON.stringify(allData));
+    alert(`${userId} 사용자의 모든 기록이 삭제되었습니다.`);
+    viewUserRecords();
+  }
+
+  function deleteSingleRecord(timestamp) {
+    let allData = JSON.parse(localStorage.getItem('allGameRankings') || '[]');
+    allData = allData.filter(e => e.timestamp !== Number(timestamp));
+    localStorage.setItem('allGameRankings', JSON.stringify(allData));
+    alert('선택한 기록이 삭제되었습니다.');
+    viewUserRecords();
+  }
+
+  window.onload = () => {
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    if (currentUser) {
       document.getElementById('loginSection').classList.add('hidden');
       document.getElementById('menuSection').classList.remove('hidden');
       updateUserInfo();
     }
-
-    function logout() {
-      localStorage.removeItem('currentUser');
-      document.getElementById('menuSection').classList.add('hidden');
-      document.getElementById('loginSection').classList.remove('hidden');
-    }
-
-    function updateUserInfo() {
-      const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-      if (currentUser) {
-        if (currentUser.isAdmin) {
-          document.getElementById('userInfo').innerHTML = `환영합니다, 관리자님!`;
-          document.getElementById('adminMenu').classList.remove('hidden');
-        } else {
-          document.getElementById('userInfo').innerHTML = `환영합니다, ${currentUser.name} (${currentUser.id})님!`;
-          document.getElementById('rankingSection').classList.remove('hidden');
-        }
-      }
-    }
-
-    // Enter 키로 로그인
-    document.addEventListener('DOMContentLoaded', () => {
-      document.getElementById('studentId').addEventListener('keydown', e => {
-        if (e.key === 'Enter') document.getElementById('studentName').focus();
-      });
-      document.getElementById('studentName').addEventListener('keydown', e => {
-        if (e.key === 'Enter') login();
-      });
-    });
-
-    function showTopRankings() {
-      const allData = JSON.parse(localStorage.getItem('allGameRankings') || '[]');
-      if (allData.length === 0) {
-        document.getElementById('userRankingOutput').innerHTML = '데이터가 없습니다.';
-        return;
-      }
-      const userScores = {};
-      allData.forEach(entry => {
-        if (!userScores[entry.id]) userScores[entry.id] = { name: entry.name, scores: {}, total: 0 };
-        if (!userScores[entry.id].scores[entry.game] || userScores[entry.id].scores[entry.game] < entry.score) {
-          userScores[entry.id].scores[entry.game] = entry.score;
-        }
-      });
-      for (const user of Object.values(userScores)) {
-        user.total = Object.values(user.scores).reduce((a, b) => a + b, 0);
-      }
-      const sortedTotal = Object.entries(userScores).sort((a, b) => b[1].total - a[1].total);
-      let html = '<strong>합산 상위 5명:</strong><br>';
-      sortedTotal.slice(0, 5).forEach(([id, data], idx) => {
-        html += `${idx + 1}위 - ${data.name} (${id}): ${data.total}점<br>`;
-      });
-      const games = [...new Set(allData.map(e => e.game))];
-      games.forEach(game => {
-        html += `<br><strong>${game} 상위 5명:</strong><br>`;
-        const topPlayers = {};
-        allData.filter(e => e.game === game).forEach(entry => {
-          if (!topPlayers[entry.id] || topPlayers[entry.id].score < entry.score) {
-            topPlayers[entry.id] = { name: entry.name, score: entry.score };
-          }
-        });
-        const sortedGame = Object.entries(topPlayers).sort((a, b) => b[1].score - a[1].score);
-        sortedGame.slice(0, 5).forEach(([id, data], idx) => {
-          html += `${idx + 1}위 - ${data.name} (${id}): ${data.score}점<br>`;
-        });
-      });
-      document.getElementById('userRankingOutput').innerHTML = html;
-    }
-
-    function showAllRankings() {
-      const allData = JSON.parse(localStorage.getItem('allGameRankings') || '[]');
-      if (allData.length === 0) {
-        document.getElementById('adminOutput').innerHTML = '랭킹 데이터가 없습니다.';
-        return;
-      }
-      const sortedData = allData.sort((a, b) => b.score - a.score);
-      let html = '<strong>전체 기록 목록 (점수 순):</strong><br>';
-      sortedData.forEach((entry, index) => {
-        html += `${index + 1}. ${entry.name} (${entry.id}) - ${entry.game}: ${entry.score}점 (시간: ${new Date(entry.timestamp).toLocaleString()})<br>`;
-      });
-      document.getElementById('adminOutput').innerHTML = html;
-    }
-
-    function resetAllRankings() {
-      if (confirm('정말로 모든 랭킹 데이터를 초기화하시겠습니까?')) {
-        localStorage.removeItem('allGameRankings');
-        document.getElementById('adminOutput').innerHTML = '모든 랭킹 데이터가 초기화되었습니다.';
-      }
-    }
-
-    function viewUserRecords() {
-      const allData = JSON.parse(localStorage.getItem('allGameRankings') || '[]');
-      if (allData.length === 0) {
-        document.getElementById('adminOutput').innerHTML = '사용자 기록이 없습니다.';
-        return;
-      }
-      const users = [...new Set(allData.map(e => e.id))];
-      let html = '<strong>사용자별 기록:</strong><br>';
-      users.forEach(id => {
-        const userRecords = allData.filter(e => e.id === id);
-        html += `<u>${userRecords[0].name} (${id})</u> <button onclick="deleteUserRecords('${id}')">전체 삭제</button><br>`;
-        userRecords.forEach(r => {
-          html += `&nbsp;&nbsp;- ${r.game}: ${r.score}점 (시간: ${new Date(r.timestamp).toLocaleString()}) <button onclick="deleteSingleRecord('${r.timestamp}')">삭제</button><br>`;
-        });
-      });
-      document.getElementById('adminOutput').innerHTML = html;
-    }
-
-    function deleteUserRecords(userId) {
-      let allData = JSON.parse(localStorage.getItem('allGameRankings') || '[]');
-      allData = allData.filter(e => e.id !== userId);
-      localStorage.setItem('allGameRankings', JSON.stringify(allData));
-      alert(`${userId} 사용자의 모든 기록이 삭제되었습니다.`);
-      viewUserRecords();
-    }
-
-    function deleteSingleRecord(timestamp) {
-      let allData = JSON.parse(localStorage.getItem('allGameRankings') || '[]');
-      allData = allData.filter(e => e.timestamp !== Number(timestamp));
-      localStorage.setItem('allGameRankings', JSON.stringify(allData));
-      alert('선택한 기록이 삭제되었습니다.');
-      viewUserRecords();
-    }
-
-    window.onload = () => {
-      const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-      if (currentUser) {
-        document.getElementById('loginSection').classList.add('hidden');
-        document.getElementById('menuSection').classList.remove('hidden');
-        updateUserInfo();
-      }
-    };
-  </script>
+  };
+</script>
 </body>
 </html>
