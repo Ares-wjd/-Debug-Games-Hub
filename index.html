@@ -1,4 +1,4 @@
-<!-- index.html: Game Hub 메인 페이지 (관리자 비밀번호, 관리자 전용 전체 기록, 일반용 상위 5명 랭킹, 사용자별 기록 개별 삭제 추가, 디자인 개선, 로고 복원) -->
+<!-- index.html: Game Hub 메인 페이지 (관리자 비밀번호, 관리자 전용 전체 기록, 일반용 상위 5명 랭킹, 사용자별 기록 개별 삭제 추가, 디자인 개선, 로고 복원, Enter 키 로그인 기능 추가) -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -103,6 +103,16 @@
         }
       }
     }
+
+    // Enter 키로 로그인
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('studentId').addEventListener('keydown', e => {
+        if (e.key === 'Enter') document.getElementById('studentName').focus();
+      });
+      document.getElementById('studentName').addEventListener('keydown', e => {
+        if (e.key === 'Enter') login();
+      });
+    });
 
     function showTopRankings() {
       const allData = JSON.parse(localStorage.getItem('allGameRankings') || '[]');
