@@ -27,7 +27,49 @@
   <div class="container">
     <h1>🤖 AI 단어 설명 게임</h1>
     <div id="gameExplanation">
-      <p>AI가 힌트를 하나씩 주며 정답을 맞것", "서랍이 달려 있을 수 있음", "의자와 짝을 이루는 가구"] },
+      <p>AI가 힌트를 하나씩 주며 정답을 맞히게 됩니다. 아래 버튼을 눌러 시작하거나 게임 설명을 확인하세요.</p>
+      <button onclick="startGame()">게임 시작</button>
+      <button onclick="showDescription()">게임 설명 보기</button>
+      <button onclick="goBack()">메인으로 돌아가기</button>
+      <div id="descriptionText">
+        <strong>게임 설명:</strong><br>
+        - 제한 시간: 180초<br>
+        - AI가 문제당 최대 3개의 힌트를 순차적으로 제공합니다.<br>
+        - 각 문제당 최대 3회 시도, 시도 횟수에 따라 점수 차등 부여 (25점, 15점, 5점)<br>
+        - 3회 모두 실패 시 정답 공개 후 다음 문제 진행
+      </div>
+    </div>
+    <div id="gameArea" style="display:none;">
+      <div>⏰ 남은 시간: <span id="timer">180</span>초</div>
+      <div id="timeBarContainer"><div id="timeBar"></div></div>
+      <div id="hint" style="margin: 15px 0; font-size: 1.1em;">힌트가 여기에 표시됩니다</div>
+      <input type="text" id="guessInput" placeholder="정답을 입력하세요" onkeydown="if(event.key==='Enter') checkAnswer()">
+      <button onclick="checkAnswer()">제출</button>
+      <div id="scoreBoard">점수: 0점</div>
+      <div id="result"></div>
+      <div id="attempts">남은 시도: 3회</div>
+    </div>
+    <div id="endArea" style="display:none;">
+      <h2>🎉 게임 종료</h2>
+      <div id="finalScoreBox">최종 점수와 순위를 불러오는 중...</div>
+      <div id="finalButtons">
+        <button onclick="startGame()">다시 시작</button>
+        <button onclick="goBack()">메인으로 돌아가기</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    const problems = [
+      { "answer": "의자", "hints": ["앉을 수 있음", "네 다리", "책상 옆에 있음"] },
+      { "answer": "토끼", "hints": ["귀가 긺", "풀을 먹음", "깡총깡총"] },
+      { "answer": "냉장고", "hints": ["이 안에 음식을 넣으면 오랫동안 상하지 않습니다.", "문을 열면 차가운 바람이 나옵니다.", "부엌에서 제일 시원한 물건입니다."] },
+      { "answer": "우산", "hints": ["비 오는 날 꼭 들고 나가셔야 합니다.", "접었다 폈다 할 수 있고 머리 위에 씁니다.", "젖지 않으려면 이게 필요합니다."] },
+      { "answer": "치약", "hints": ["아침저녁으로 칫솔에 짜서 사용하시면 됩니다.", "입냄새 제거와 충치 예방에 좋습니다.", "민트 맛이 나는 제품이 많습니다."] },
+      { "answer": "안경", "hints": ["잘 안 보일 때 쓰시면 또렷하게 보입니다.", "눈 위에 올려서 사용하는 도구입니다.", "렌즈가 두 개 달려 있습니다."] },
+      { "answer": "버스", "hints": ["정류장에서 기다리면 옵니다.", "지하철보다 위에서 달립니다.", "정해진 길을 따라 많은 사람을 태우고 다닙니다."] },
+      { "answer": "책상", "hints": ["공부하거나 일할 때 주로 앉는 곳", "서랍이 달려 있을 수 있음", "의자와 짝을 이루는 가구"] },
       { "answer": "시계", "hints": ["시간을 알려주는 도구입니다.", "벽에 걸거나 손목에 차는 것도 있습니다.", "초, 분, 시가 계속 움직입니다."] },
       { "answer": "베개", "hints": ["잘 때 머리를 올려놓는 물건입니다.", "잠자리에서 이게 없으면 허전하실 수 있습니다.", "부드럽고 폭신폭신합니다."] },
       { "answer": "책", "hints": ["글자와 그림이 인쇄되어 있고 지식을 줍니다.", "도서관이나 서점에서 많이 보실 수 있습니다.", "종이로 된 것도 있고, 전자 기기로 읽는 형태도 있습니다."] },
