@@ -101,6 +101,7 @@
   <script>
     const currentUser = JSON.parse(localStorage.getItem('currentUser'));
 const questions = [
+  // Python
   { q: 'Python에서 리스트 길이를 구하는 함수는?', opts: ['size()', 'len()', 'count()', 'length()', 'measure()'], ans: 1 },
   { q: 'Python에서 사전의 키 목록을 얻는 메서드는?', opts: ['items()', 'values()', 'keys()', 'list()', 'dict()'], ans: 2 },
   { q: 'Python에서 익명 함수를 만들 때 사용하는 키워드는?', opts: ['lambda', 'def', 'function', 'anon', 'func'], ans: 0 },
@@ -140,7 +141,8 @@ const questions = [
   { q: '파이썬에서 반복 가능한 객체를 나열형으로 반환하는 함수는?', opts: ['enumerate()', 'list()', 'range()', 'count()', 'index()'], ans: 0 },
   { q: '파이썬에서 객체의 타입을 확인하는 함수는?', opts: ['typeof()', 'type()', 'kind()', 'class()', 'instance()'], ans: 1 },
   { q: '파이썬에서 모듈을 외부 파일로부터 동적으로 로드하는 함수는?', opts: ['eval()', 'compile()', 'importlib.import_module()', 'execfile()', 'load()'], ans: 2 },
-  // JavaScript questions
+
+  // JavaScript
   { q: 'JavaScript에서 상수를 선언할 때 사용하는 키워드는?', opts: ['var', 'const', 'let', 'static', 'define'], ans: 1 },
   { q: 'DOM 요소를 선택하는 메서드 querySelector가 속한 객체는?', opts: ['document', 'window', 'navigator', 'element', 'selector'], ans: 0 },
   { q: 'JavaScript에서 배열 끝에 요소를 추가하는 메서드는?', opts: ['push()', 'add()', 'append()', 'insert()', 'concat()'], ans: 0 },
@@ -181,7 +183,8 @@ const questions = [
   { q: '브라우저 저장 공간 중 세션이 닫히면 사라지는 곳은?', opts: ['localStorage', 'sessionStorage', 'cookie', 'cache', 'db'], ans: 1 },
   { q: 'ES6에서 값을 구조 분해 할당할 때 사용하는 문법은?', opts: ['spread', 'destructure', 'split', 'assign', 'bind'], ans: 1 },
   { q: 'Promise 체인의 마지막에서 오류를 처리하는 메서드는?', opts: ['catch()', 'error()', 'fail()', 'end()', 'resolve()'], ans: 0 },
-  // HTML/CSS questions
+
+  // HTML/CSS
   { q: 'HTML 문서의 루트 요소는?', opts: ['<head>', '<body>', '<html>', '<root>', '<main>'], ans: 2 },
   { q: '링크를 생성하는 태그는?', opts: ['<a>', '<link>', '<href>', '<url>', '<anchor>'], ans: 0 },
   { q: '이미지를 삽입할 때 사용하는 태그는?', opts: ['<img>', '<image>', '<picture>', '<src>', '<media>'], ans: 0 },
@@ -223,7 +226,8 @@ const questions = [
   { q: 'HTML에서 여러 줄 입력을 받을 때 사용하는 태그는?', opts: ['<input>', '<textarea>', '<multiline>', '<textbox>', '<textinput>'], ans: 1 },
   { q: 'CSS에서 요소의 테두리를 둥글게 만드는 속성은?', opts: ['border-style', 'border-radius', 'border-width', 'border-round', 'roundness'], ans: 1 },
   { q: 'HTML에서 문단을 나타내는 태그는?', opts: ['<div>', '<section>', '<p>', '<paragraph>', '<text>'], ans: 2 },
-  // Java questions
+
+  // Java
   { q: 'Java에서 프로그램의 시작점이 되는 메서드 이름은?', opts: ['start()', 'run()', 'main()', 'init()', 'execute()'], ans: 2 },
   { q: 'Java에서 클래스를 상속받을 때 사용하는 키워드는?', opts: ['implement', 'extends', 'inherit', 'super', 'include'], ans: 1 },
   { q: '자바에서 인터페이스를 구현할 때 사용하는 키워드는?', opts: ['extends', 'implements', 'inherit', 'include', 'uses'], ans: 1 },
@@ -255,7 +259,8 @@ const questions = [
   { q: '자바에서 인터페이스의 모든 메서드는 기본적으로 어떤 특성을 가지는가?', opts: ['static', 'final', 'abstract', 'synchronized', 'native'], ans: 2 },
   { q: 'JVM에서 스택 영역에 저장되지 않는 것은?', opts: ['지역 변수', '매개변수', '인스턴스 변수', '리턴 주소', '프레임'], ans: 2 },
   { q: '자바에서 switch 문에 사용할 수 없는 타입은?', opts: ['int', 'String', 'enum', 'float', 'char'], ans: 3 },
-  // Algorithms questions
+
+  // Algorithms
   { q: '퀵 정렬의 평균 시간 복잡도는?', opts: ['O(n)', 'O(n log n)', 'O(n^2)', 'O(log n)', 'O(1)'], ans: 1 },
   { q: '그래프 탐색에서 큐를 사용하는 알고리즘은?', opts: ['DFS', 'BFS', 'Dijkstra', 'Bellman-Ford', 'A*'], ans: 1 },
   { q: '트리에서 부모가 없는 노드를 무엇이라 하는가?', opts: ['leaf', 'root', 'branch', 'node', 'child'], ans: 1 },
@@ -275,7 +280,8 @@ const questions = [
   { q: '빅오 표기법에서 O(1)을 무엇이라 부르는가?', opts: ['상수 시간', '선형 시간', '로그 시간', '지수 시간', '평균 시간'], ans: 0 },
   { q: '우선순위 큐에서 가장 높은 우선순위를 가진 요소를 얻는 연산은?', opts: ['insert', 'delete', 'peek', 'push', 'enqueue'], ans: 2 },
   { q: '재귀 호출의 종료 조건을 무엇이라 하는가?', opts: ['베이스 케이스', '리프 케이스', '컨디션', '터미널', '엔드'], ans: 0 },
-  // SQL questions
+
+  // SQL
   { q: '데이터베이스에서 테이블을 조회하는 명령은?', opts: ['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'CREATE'], ans: 0 },
   { q: 'SQL에서 조건을 지정할 때 사용하는 절은?', opts: ['WHERE', 'FROM', 'GROUP', 'ORDER', 'SET'], ans: 0 },
   { q: '새로운 레코드를 추가할 때 사용하는 명령은?', opts: ['INSERT', 'APPEND', 'ADD', 'CREATE', 'JOIN'], ans: 0 },
@@ -296,7 +302,8 @@ const questions = [
   { q: 'SQL에서 BETWEEN 연산자는 어떤 용도로 사용되는가?', opts: ['범위 비교', '문자 연결', '집합 연산', '형 변환', '정렬'], ans: 0 },
   { q: '데이터베이스에서 트랜잭션을 취소하는 명령은?', opts: ['ROLLBACK', 'COMMIT', 'ABORT', 'CANCEL', 'STOP'], ans: 0 },
   { q: 'SQL에서 컬럼에 별칭을 지정할 때 사용하는 키워드는?', opts: ['AS', 'ALIAS', 'NAME', 'LABEL', 'CALL'], ans: 0 },
-  // C/C++ questions
+
+  // C/C++
   { q: 'C언어에서 표준 입출력 헤더 파일은?', opts: ['stdio.h', 'stdlib.h', 'string.h', 'iostream', 'ctype.h'], ans: 0 },
   { q: 'C++에서 네임스페이스 std를 사용하기 위한 선언은?', opts: ['use namespace std;', 'using namespace std;', 'include std;', 'namespace std;', 'using std;'], ans: 1 },
   { q: '포인터의 크기를 바이트 단위로 나타내는 연산자는?', opts: ['sizeof', 'lengthof', 'size', 'len', 'measure'], ans: 0 },
